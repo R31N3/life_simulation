@@ -5,8 +5,6 @@ from __future__ import unicode_literals
 # Импортируем модули для работы с логами.
 import logging
 
-logging.info('!!!')
-print('hey')
 
 # Импортируем модуль для работы с API Алисы
 from alice_sdk import AliceRequest, AliceResponse
@@ -26,13 +24,9 @@ logging.basicConfig(level=logging.DEBUG)
 # Хранилище данных о сессиях.
 session_storage = {}
 
-print('ok')
-
 @app.route("/alice_hackaton/ping")
 def mainn():
   return "pong"
-
-print('ololo')
 
 # Задаем параметры приложения Flask.
 @app.route("/alice_hackaton/", methods=['POST'])
