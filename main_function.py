@@ -29,13 +29,14 @@ def map_answer(myAns,withAccent=False):
 
 def handle_dialog(request, response, user_storage, database):
     global Named, handler
+    input_message = request.command.lower().strip("?!.")
     if request.is_new_session or "name" not in user_storage.keys():
         if request.is_new_session and not database.get_entry(request.user_id):
-            message = "Приветствую, немеханический. Не получается стать программистом? " \
+            output_message = "Приветствую, немеханический. Не получается стать программистом? " \
                       "Есть вопросы о нашей нелёгкой жизни? Запускай симулятор! " \
                       "#для продолжения необходимо пройти авторизацию, введите имя пользователя..."
-            response.set_text(aliceSpeakMap(message))
-            response.set_tts(aliceSpeakMap(message))
+            response.set_text(aliceSpeakMap(output_message))
+            response.set_tts(aliceSpeakMap(output_message))
             handler = "asking name"
             return response, user_storage
         if handler == "asking name":
@@ -62,7 +63,7 @@ def handle_dialog(request, response, user_storage, database):
         return response, user_storage
 
 
-    if request.command.lower().strip("?!.") in ['помощь', 'что ты умеешь', 'что за симулятор']:
+    if input_message in ['помощь', 'что ты умеешь', 'что за симулятор']:
         #Вот эти строчки отвечают за саджесты(кнопочкииии)
         buttons, user_storage = get_suggests(user_storage)
         response.set_buttons(buttons)
@@ -73,14 +74,14 @@ def handle_dialog(request, response, user_storage, database):
         handler = "help"
         buttons, user_storage = get_suggests(user_storage)
         #Вот тут заканчиваются эти строчки и кнопочкииии
-        message = 'Нужна помощь? Укажи нужный раздел! Доступные: ' + ", ".join(user_storage["suggests"])
-        response.set_text(message)
-        response.set_tts(message)
+        output_message = 'Нужна помощь? Укажи нужный раздел! Доступные: ' + ", ".join(user_storage["suggests"])
+        response.set_text(output_message)
+        response.set_tts(output_message)
         buttons, user_storage = get_suggests(user_storage)
         response.set_buttons(buttons)
         return response, user_storage
 
-    if request.command.lower().strip("?!.") in ['обратная связь', 'связь'] and handler == "help":
+    if input_message in ['обратная связь', 'связь'] and handler == "help":
         # Вот эти строчки отвечают за саджесты(кнопочкииии)
         buttons, user_storage = get_suggests(user_storage)
         response.set_buttons(buttons)
@@ -92,15 +93,15 @@ def handle_dialog(request, response, user_storage, database):
         buttons, user_storage = get_suggests(user_storage)
         # Вот тут заканчиваются эти строчки и кнопочкииии
         # Ха-ха-ха
-        message = 'Для того, чтобы связаться с нами, стучите на адрес example@example.com, ваше мнение важно' \
+        output_message = 'Для того, чтобы связаться с нами, стучите на адрес example@example.com, ваше мнение важно' \
                   ' для нас! Доступные разделы: ' + ", ".join(user_storage["suggests"])
-        response.set_text(message)
-        response.set_tts(message)
+        response.set_text(output_message)
+        response.set_tts(output_message)
         buttons, user_storage = get_suggests(user_storage)
         response.set_buttons(buttons)
         return response, user_storage
 
-    if request.command.lower().strip("?!.") in ['механики', 'основные механики'] and handler == "help":
+    if input_message in ['механики', 'основные механики'] and handler == "help":
         # Вот эти строчки отвечают за саджесты(кнопочкииии)
         buttons, user_storage = get_suggests(user_storage)
         response.set_buttons(buttons)
@@ -111,14 +112,14 @@ def handle_dialog(request, response, user_storage, database):
         buttons, user_storage = get_suggests(user_storage)
         # Вот тут заканчиваются эти строчки и кнопочкииии
         # Ха-ха-ха
-        message = 'Какая именно механика вас интересует? Реализованные(ХА-ХА-ХА, НЕТ) механики: ' + ", ".join(user_storage["suggests"])
-        response.set_text(message)
-        response.set_tts(message)
+        output_message = 'Какая именно механика вас интересует? Реализованные(ХА-ХА-ХА, НЕТ) механики: ' + ", ".join(user_storage["suggests"])
+        response.set_text(output_message)
+        response.set_tts(output_message)
         buttons, user_storage = get_suggests(user_storage)
         response.set_buttons(buttons)
         return response, user_storage
 
-    if request.command.lower().strip("?!.") in ['механики', 'основные механики'] and handler == "help":
+    if input_message in ['механики', 'основные механики'] and handler == "help":
         # Вот эти строчки отвечают за саджесты(кнопочкииии)
         buttons, user_storage = get_suggests(user_storage)
         response.set_buttons(buttons)
@@ -129,14 +130,14 @@ def handle_dialog(request, response, user_storage, database):
         buttons, user_storage = get_suggests(user_storage)
         # Вот тут заканчиваются эти строчки и кнопочкииии
         # Ха-ха-ха
-        message = 'Какая именно механика вас интересует? Реализованные(ХА-ХА-ХА, НЕТ) механики: ' + ", ".join(user_storage["suggests"])
-        response.set_text(message)
-        response.set_tts(message)
+        output_message = 'Какая именно механика вас интересует? Реализованные(ХА-ХА-ХА, НЕТ) механики: ' + ", ".join(user_storage["suggests"])
+        response.set_text(output_message)
+        response.set_tts(output_message)
         buttons, user_storage = get_suggests(user_storage)
         response.set_buttons(buttons)
         return response, user_storage
 
-    if request.command.lower().strip("?!.") in ['механики', 'основные механики'] and handler == "help":
+    if input_message in ['время', 'время в игре'] and handler == "help":
         # Вот эти строчки отвечают за саджесты(кнопочкииии)
         buttons, user_storage = get_suggests(user_storage)
         response.set_buttons(buttons)
@@ -148,15 +149,15 @@ def handle_dialog(request, response, user_storage, database):
         buttons, user_storage = get_suggests(user_storage)
         # Вот тут заканчиваются эти строчки и кнопочкииии
         # Ха-ха-ха
-        message = 'sample_text' + ", ".join(
+        output_message = 'sample_text' + ", ".join(
             user_storage["suggests"])
-        response.set_text(message)
-        response.set_tts(message)
+        response.set_text(output_message)
+        response.set_tts(output_message)
         buttons, user_storage = get_suggests(user_storage)
         response.set_buttons(buttons)
         return response, user_storage
 
-    if request.command.lower().strip("?!.") in ['нет', 'не хочется', 'в следующий раз', 'выход', "не хочу", 'выйти']:
+    if input_message in ['нет', 'не хочется', 'в следующий раз', 'выход', "не хочу", 'выйти']:
         answered = True
         choice = random.choice(aliceAnswers["quitTextVariations"])
         response.set_text(aliceSpeakMap(choice))
