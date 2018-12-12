@@ -29,6 +29,7 @@ def map_answer(myAns,withAccent=False):
 
 def handle_dialog(request, response, user_storage, database):
     global Named, handler
+    #request.command - сообщение от пользователя
     input_message = request.command.lower().strip("?!.")
     if request.is_new_session or "name" not in user_storage.keys():
         if request.is_new_session and not database.get_entry(request.user_id):
