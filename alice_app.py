@@ -17,12 +17,16 @@ from flask import Flask, request
 app = Flask(__name__)
 
 import database_module
+import postgresql_database
 import pymorphy2
 
 logging.basicConfig(level=logging.DEBUG)
 
 # Хранилище данных о сессиях.
 session_storage = {}
+
+def init_database(host, user, password, dbname):
+    pass
 
 @app.route("/alice_hackaton/ping")
 def mainn():
