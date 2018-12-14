@@ -1,4 +1,5 @@
-from function_example import *
+from main_function import *
+import database_module
 class DeRequest():
     def __init__(self,isNewSession,userID):
         self.is_new_session = isNewSession
@@ -28,7 +29,8 @@ def printResponce(response):
 print("DE: Введите ID пользователя")
 id = input()
 stResponce = DeResponse()
-responce, userStorage = handle_dialog(DeRequest(True,id),stResponce,{})
+database = database_module.DatabaseManager()
+responce, userStorage = handle_dialog(DeRequest(True,id),stResponce,{}, database)
 printResponce(responce)
 while True:
     res = input()
@@ -36,6 +38,6 @@ while True:
     stResponce = DeResponse()
     mRequest = DeRequest(False, id)
     mRequest.command = res
-    responce, userStorage = handle_dialog(mRequest, stResponce, userStorage)
+    responce, userStorage = handle_dialog(mRequest, stResponce, userStorage, database)
     printResponce(stResponce)
     if(stResponce.end_session): quit("Выход из навыка")

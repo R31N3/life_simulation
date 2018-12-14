@@ -50,7 +50,7 @@ def handle_dialog(request, response, user_storage, database):
     #!!handler = "ну вот тут ты забираешь хэндлер из бд, ага"
     input_message = request.command.lower().strip("?!.")
     #первый запуск/перезапуск диалога
-    if request.is_new_session or "name" not in user_storage.keys():
+    if request.is_new_session or "name" not in user_storage.keys() and not handler == "named_already":
         if request.is_new_session and not database.get_entry(request.user_id):
             output_message = "Приветствую, немеханический. Не получается стать программистом? " \
                       "Есть вопросы о нашей нелёгкой жизни? Запускай симулятор! " \
@@ -118,7 +118,9 @@ def handle_dialog(request, response, user_storage, database):
     #Основная стартовая страница с основными данными игрока(основной раздел data)
     if handler.startswith("start_page"):
         #start_page
+        print(handler)
         if input_message == "назад":
+            print(handler)
             splited = handler.split("->")
             if len(splited) > 1:
                 handler = "->".join(splited[:-1])
@@ -203,8 +205,8 @@ def handle_dialog(request, response, user_storage, database):
 
             handler += "->food_next"
 
-            output_message = "Ваш голод: {} Доступные продукты: \n {}".format(food, ",\n".join(user_storage['suggests'][:-1]
-                                                                                            +"\n Доступные опции: Назад"))
+            output_message = "Ваш голод: {} Доступные продукты: \n {}".format(food,
+                            ",\n".join(user_storage['suggests'][:-1])+"\n Доступные опции: Назад")
 
             buttons, user_storage = get_suggests(user_storage)
             return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
@@ -213,11 +215,11 @@ def handle_dialog(request, response, user_storage, database):
         if handler.endswith("->food_next"):
             #!!Необходимо добавить в БД уровень игрока, который я потом буду подсчитывать, стартовый - первый.
             #!!Этот уровень и есть индекс, агааа.
-            index = 1
+            index = "1"
             product = ""
             food_list = read_answers_data("data/list")["food"][index]
             for i in food_list.keys():
-                if i.startswith(input_message):
+                if i.lower().startswith(input_message):
                     product = i
                     product_price = food_list[i][0]
                     product_weight = food_list[i][1]
@@ -228,11 +230,11 @@ def handle_dialog(request, response, user_storage, database):
                 #Потом возвращаем хендлером к предыдущему этапу
                 handler = "->".join(handler.split("->")[:-1])
                 if flag == True:
-                    output_message = "Продукт {} успешно преобретен".format(
-                        ",\n".join(user_storage['suggests'][:-1] + "\n Доступная команда: Назад"))
+                    output_message = "Продукт {} успешно преобретен. \n Доступные продукты: {}".format(product,
+                        ",\n".join(user_storage['suggests'][:-1]) + "\n Доступная команда: Назад")
                 else:
-                    output_message = "Продукт {} нельзя преобрести, нехватает денег".format(
-                        ",\n".join(user_storage['suggests'][:-1] + "\n Доступная команда: Назад"))
+                    output_message = "Продукт {} нельзя преобрести, нехватает денег. \n Доступные продукты:{} ".format(product,
+                        ",\n".join(user_storage['suggests'][:-1]) + "\n Доступная команда: Назад")
             else:
                 output_message = "Продукт {} не найден, повторите запрос".format(input_message)
 
@@ -254,7 +256,7 @@ def handle_dialog(request, response, user_storage, database):
             handler += "->health_next"
 
             output_message = "Ваше здоровье {} \n Доступные методы восстановления здоровья: \n {}".format(health,
-                ",\n".join(user_storage['suggests'][:-1] + "\n Доступная команда: Назад"))
+                ",\n".join(user_storage['suggests'][:-1])+ "\n Доступная команда: Назад")
 
             buttons, user_storage = get_suggests(user_storage)
             return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
@@ -267,7 +269,7 @@ def handle_dialog(request, response, user_storage, database):
             product = ""
             food_list = read_answers_data("data/list")["health"][index]
             for i in food_list.keys():
-                if i.startswith(input_message):
+                if i.lower().startswith(input_message):
                     product = i
                     product_price = food_list[i][0]
                     product_weight = food_list[i][1]
@@ -278,13 +280,15 @@ def handle_dialog(request, response, user_storage, database):
                 # Потом возвращаем хендлером к предыдущему этапу
                 handler = "->".join(handler.split("->")[:-1])
                 if flag == True:
-                    output_message = "Метод {} успешно оплачен".format(
-                        ",\n".join(user_storage['suggests'][:-1] + "\n Доступная команда: Назад"))
+                    output_message = "Метод {} успешно оплачен. \n Доступные методы восстановления здоровья: {}".format(product,
+                        ",\n".join(user_storage['suggests'][:-1])+ "\n Доступная команда: Назад")
                 else:
-                    output_message = "Метод {} нельзя оплатить, нехватает денег".format(
-                        ",\n".join(user_storage['suggests'][:-1] + "\n Доступная команда: Назад"))
+                    output_message = "Метод {} нельзя оплатить, нехватает денег. \n Доступные методы восстановления" \
+                                     " здоровья: {}".format(product,
+                        ",\n".join(user_storage['suggests'][:-1])+ "\n Доступная команда: Назад")
             else:
-                output_message = "Метод {} не найден, повторите запрос".format(input_message)
+                output_message = "Метод {} не найден, повторите запрос. \n Доступные методы восстановления здоровья:" \
+                                 " {}".format(input_message, ",\n".join(user_storage['suggests'][:-1])+ "\n Доступная команда: Назад")
 
             buttons, user_storage = get_suggests(user_storage)
             return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
@@ -304,7 +308,7 @@ def handle_dialog(request, response, user_storage, database):
             handler += "->mood_next"
 
             output_message = "Ваше настроение {} \n Доступные методы восстановления настроения: \n {}".format(mood,
-                ",\n".join(user_storage['suggests'][:-1] + "\n Доступная команда: Назад"))
+                ",\n".join(user_storage['suggests'][:-1])+ "\n Доступная команда: Назад")
 
             buttons, user_storage = get_suggests(user_storage)
             return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
@@ -317,7 +321,7 @@ def handle_dialog(request, response, user_storage, database):
             product = ""
             food_list = read_answers_data("data/list")["mood"][index]
             for i in food_list.keys():
-                if i.startswith(input_message):
+                if i.lower().startswith(input_message):
                     product = i
                     product_price = food_list[i][0]
                     product_weight = food_list[i][1]
@@ -328,13 +332,15 @@ def handle_dialog(request, response, user_storage, database):
                 # Потом возвращаем хендлером к предыдущему этапу
                 handler = "->".join(handler.split("->")[:-1])
                 if flag == True:
-                    output_message = "Метод {} успешно оплачен".format(
-                        ",\n".join(user_storage['suggests'][:-1] + "\n Доступная команда: Назад"))
+                    output_message = "Метод {} успешно оплачен. \n Доступные методы восстановления настроения: {}".format(product,
+                        ",\n".join(user_storage['suggests'][:-1])+ "\n Доступная команда: Назад")
                 else:
-                    output_message = "Метод {} нельзя оплатить, нехватает денег".format(
-                        ",\n".join(user_storage['suggests'][:-1] + "\n Доступная команда: Назад"))
+                    output_message = "Метод {} нельзя оплатить, нехватает денег. \n Доступные методы восстановления" \
+                                     " настроения: {}".format(product,
+                        ",\n".join(user_storage['suggests'][:-1])+ "\n Доступная команда: Назад")
             else:
-                output_message = "Метод {} не найден, повторите запрос".format(input_message)
+                output_message = "Метод {} не найден, повторите запрос. \n Доступные методы восстановления здоровья:" \
+                                 " {}".format(input_message, ",\n".join(user_storage['suggests'][:-1])+ "\n Доступная команда: Назад")
 
             buttons, user_storage = get_suggests(user_storage)
             return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
