@@ -8,6 +8,9 @@ Named = False
 #В хэндлере мы записываем путь по разделам, который прокладывает пользователь, начиная от основных разделов
 handler = ""
 
+def find_difference(lst1, lst2):
+    return [i for i in lst1 if i not in lst2]
+
 def read_data():
     with open("words.json", encoding="utf-8") as file:
         data = json.loads(file.read())
@@ -121,7 +124,6 @@ def handle_dialog(request, response, user_storage, database):
     #Основная стартовая страница с основными данными игрока(основной раздел data)
     if handler.startswith("start_page"):
         #start_page
-        print(handler)
         if input_message == "назад":
             splited = handler.split("->")
             if handler.endswith("_next"):
@@ -131,7 +133,7 @@ def handle_dialog(request, response, user_storage, database):
                     handler = "->".join(splited[:-2])
                 else:
                     handler = "null"
-            print(handler)
+
 
         if handler == "start_page":
             money = "сюда вставить получение денег пользователя"
@@ -340,6 +342,17 @@ def handle_dialog(request, response, user_storage, database):
             return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
 
     if handler.startswith("profit_page"):
+        if input_message == "назад" and not handler.endswith("job"):
+            splited = handler.split("->")
+            if handler.endswith("_next"):
+                handler = "->".join(splited[:-3])
+            else:
+                if len(splited) > 1:
+                    handler = "->".join(splited[:-2])
+                else:
+                    handler = "null"
+            handler = "null" if not handler else handler
+
         if handler == "profit_page":
             job = "сюда вставить получение работы пользователя"
             frilance = "сюда вставить получение фриланса пользователя"
@@ -378,24 +391,60 @@ def handle_dialog(request, response, user_storage, database):
             job = "1"
             job_list = read_answers_data("data/list")["job"]
             keys = sorted(job_list.keys())
+            user_storage['suggests'] = ["Назад"]
             #Если у нас не максимально возможная ЗП, выдаем список вакансий длиной максимум до 10
             if int(job) != len(keys):
                 border = len(keys[int(job):]) % 10 if len(keys[int(job):]) % 10 != 0 else 10
-                handler += "job_next"
+                handler += "->job_next"
                 lst = ["Текущая: {} Зарплата: {}".format(job_list[job][0], job_list[job][1])]
-                lst += keys[int(job):border]
-                user_storage['suggests'] = ["Назад"]
+                lst += keys[int(job):border + 1]
                 output_message = "Список вакансий: \n {} \n {} \n Выберите желаемую.  \n Доступные команды: Назад".format(lst[0],
                     "\n".join(["{} Зарплата: {}".format(job_list[i][0], job_list[i][1]) for i in lst[1:]]))
             else:
-                user_storage['suggests'] = ["Назад"]
                 output_message = "Список вакансий: \n {} \n Выбирать больше не из чего. \n Доступные команды: Назад".format(job_list[job])
 
             buttons, user_storage = get_suggests(user_storage)
             return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
 
         if handler.endswith("job_next"):
-            pass
+            job = "1"
+            user_storage['suggests'] = ["Назад"]
+            handler = "->".join(handler.split("->")[:-1])
+            output_message = ""
+            #!!Вот сюда засунуть нужно образование игрока
+            user_requierments = ["..."]
+            job_list = read_answers_data("data/list")["job"]
+            keys = sorted(job_list.keys())
+            border = len(keys[int(job):]) % 10 if len(keys[int(job):]) % 10 != 0 else 10
+            for i in keys[int(job):border + 1]:
+                if input_message in job_list[i][0].lower():
+                    difference = [j for j in job_list[i][2] if j not in user_requierments]
+                    if not difference:
+                        #!! Тут мы меняем работу на новую, если у нас совпадают все требования
+                        job = i
+                        output_message = "Вы успешно повысились до {}. Доступные команды: Назад".format(job_list[job][0])
+                    else:
+                        output_message = "Повышение невозможно, нехватает следующего: {}. Доступные команды: Назад".format(", ".join(difference))
+                    break
+            if output_message:
+                buttons, user_storage = get_suggests(user_storage)
+                return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
+
+    if handler == "null":
+        user_storage['suggests'] = [
+            "Источник дохода",
+            "Образование и курсы",
+            "Конфигурация рабочей системы",
+            "Помощь",
+            "Назад"
+        ]
+
+        handler = "other->other_next"
+
+        output_message = "Доступные разделы: {}".format(", ".join(user_storage['suggests']))
+
+        buttons, user_storage = get_suggests(user_storage)
+        return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
 
     if input_message in ['нет', 'не хочется', 'в следующий раз', 'выход', "не хочу", 'выйти']:
         answered = True
