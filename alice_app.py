@@ -29,14 +29,30 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 def init_database(host, user, password, dbname):
+    """
+    =================================================================
+    Значения по умолчанию подавать по следующему шаблону:
+    'column_name': "type DEFAULT value", где value в зависомости от
+    типа ДОЛЖНО принимать следующие значения:
+    INTEGER -> 0; REAL -> 0.00; TEXT -> 'text here'; BOOLEAN -> True;
+    list -> '[entry1#&% запись2 #&% "3"]' - ТОЛЬКО ТАК на вход
+    И угадывайте как хотите, лист чего нам пришёл, туплей или нет,
+    тех или не тех. УДОБНО, ДА? Как просили, так и сделали.
+    =================================================================
+    """
     psdb = postgresql_database.DatabaseManager(host, user, password, dbname)
-    psdb.create_table('users_info',
-                      {'handler': 'string', 'Named': 'bool', 'Experience': 'int', 'Money': 'int', 'Food': 'int',
-                       'Mood': 'int', 'Health': 'int', 'Money_Waste': 'int', 'Food_Waste': 'int', 'Mood_Waste': 'int',
-                       'Health_Waste': 'int', 'Date': 'str', 'CPU': 'str', 'RAM': 'str', 'Disk': 'str', 'VRAM': 'str',
-                       'Monitor': 'str', 'LAN': 'str', 'Operation_System': 'str', 'Antivirus': 'str',
-                       'Programmes': 'list', 'Education': 'list', 'Courses': 'list', 'Books': 'list', 'Job': 'str',
-                       'Second_Job': 'list', 'Bank': 'list', 'Vehicle': 'str', 'Business': 'str', 'Events': 'list'})
+    psdb.create_table("users_info",
+                      {"handler": "string DEFAULT ''", "Named": "bool DEFAULT False", "Experience": "int DEFAULT 0",
+                       "Money": "int DEFAULT 1000", "Food": "int DEFAULT 100",
+                       "Mood": "int DEFAULT 100", "Health": "int DEFAULT 100", "Money_Waste": "int DEFAULT 0",
+                       "Food_Waste": "int DEFAULT 20", "Mood_Waste": "int DEFAULT 20",
+                       "Health_Waste": "int DEFAULT 0", "Date": "str DEFAULT '01.01.1970'",
+                       "CPU": "str DEFAULT 'Pentagnome 1488'", "RAM": "str DEFAULT '10MB'",
+                       "Disk": "str DEFAULT '10GB'", "VRAM": "str", "Monitor": "str DEFAULT 'MONITORCHEK'",
+                       "LAN": "str DEFAULT '10kbps'", "Operation_System": "str DEFAULT 'SHINDOWS'",
+                       "Antivirus": "str DEFAULT 'Cashpersky'", "Programmes": "list", "Education": "list",
+                       "Courses": "list", "Books": "list", "Job": "str", "Second_Job": "list", "credit": "list",
+                       "Vehicle": "str DEFAULT 'kostyleped'", "Business": "str DEFAULT ''", "Events": "list"})
     return psdb
 
 
