@@ -105,21 +105,17 @@ def handle_dialog(request, response, user_storage, database):
         elif input_message == "конфигурация рабочей системы" or input_message == "конфигурация":
             handler = "system_page"
 
-    #условие на случай, если пользователь хендлером вышел из основных разделов
-    if handler == "null":
-        handler = "first_step_pass"
-        user_storage['suggests'] = [
-            "Основная информация",
-            "Источник дохода",
-            "Образование и курсы",
-            "Конфигурация рабочей системы",
-            "Помощь"
-        ]
-
-        output_message = "Похоже мы вернулись в начало. \n Доступные опции: {}".format(", ".join(user_storage['suggests']))
-
-        buttons, user_storage = get_suggests(user_storage)
-        return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
+    # Возвращает хендлер к основному разделу
+    # !!Необходимо вынести подобную проверку в отдельную функцию для вызова в других разделах
+    if handler.endswith("other_next"):
+        if input_message == "источник дохода" or input_message == "доход":
+            handler = "profit_page"
+        elif input_message == "образование и курсы" or input_message == "образование" or input_message == "курсы":
+            handler = "education_page"
+        elif input_message == "конфигурация рабочей системы" or input_message == "конфигурация":
+            handler = "system_page"
+        elif input_message == "общая информация" or input_message == "информация":
+            handler = "start_page"
 
     #Основная стартовая страница с основными данными игрока(основной раздел data)
     if handler.startswith("start_page"):
@@ -134,6 +130,23 @@ def handle_dialog(request, response, user_storage, database):
                 else:
                     handler = "null"
 
+        # !! Необходимо вынести в отдельную фунцию.
+        if handler.endswith("other") or handler == "null":
+            user_storage['suggests'] = [
+                "Основная информация",
+                "Источник дохода",
+                "Образование и курсы",
+                "Конфигурация рабочей системы",
+                "Помощь"
+            ]
+
+            handler = "other->other_next"
+
+            output_message = "Похоже мы вернулись в начало. \n Доступные опции: {}".format(
+                ", ".join(user_storage['suggests']))
+
+            buttons, user_storage = get_suggests(user_storage)
+            return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
 
         if handler == "start_page":
             money = "сюда вставить получение денег пользователя"
@@ -171,33 +184,7 @@ def handle_dialog(request, response, user_storage, database):
             elif input_message == "другие основные разделы":
                 handler += "->other"
 
-        #start_page->other
-        if handler.endswith("other"):
-            user_storage['suggests'] = [
-                "Источник дохода",
-                "Образование и курсы",
-                "Конфигурация рабочей системы",
-                "Помощь",
-                "Назад"
-            ]
 
-            handler += "->other_next"
-
-            output_message = "Доступные опции: {}".format(", ".join(user_storage['suggests']))
-
-            buttons, user_storage = get_suggests(user_storage)
-            return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
-
-        #Возвращает хендлер к основному разделу
-        #!!Необходимо вынести подобную проверку в отдельную функцию для вызова в других разделах
-        if handler.endswith("other_next"):
-            if input_message == "источник дохода" or input_message == "доход":
-                handler = "profit_page"
-            elif input_message == "образование и курсы" or input_message == "образование" or input_message == "курсы":
-                handler = "education_page"
-            elif input_message == "конфигурация рабочей системы" or input_message == "конфигурация":
-                handler = "system_page"
-        #!!Нужно сделать дальше другие основные разделы
 
         #start_page->start_next->food_recharge
         if handler.endswith("food_recharge"):
@@ -227,8 +214,8 @@ def handle_dialog(request, response, user_storage, database):
                     product = i
                     product_price = food_list[i][0]
                     product_weight = food_list[i][1]
-            #Потом возвращаем хендлером к предыдущему этапу
-            handler = "->".join(handler.split("->")[:-1])
+
+
             if product:
                 #!!Дальше мы проверяем, можем ли мы купить этот продукт, поэтому пока что тут просто будет очередной флажок
                 flag = True
@@ -274,8 +261,6 @@ def handle_dialog(request, response, user_storage, database):
                     product_price = food_list[i][0]
                     product_weight = food_list[i][1]
 
-            # Потом возвращаем хендлером к предыдущему этапу
-            handler = "->".join(handler.split("->")[:-1])
             if product:
                 # !!Дальше мы проверяем, можем ли мы купить этот продукт, поэтому пока что тут просто будет очередной флажок
                 flag = True
@@ -322,8 +307,6 @@ def handle_dialog(request, response, user_storage, database):
                     product_price = food_list[i][0]
                     product_weight = food_list[i][1]
 
-            # Потом возвращаем хендлером к предыдущему этапу
-            handler = "->".join(handler.split("->")[:-1])
             if product:
                 # !!Дальше мы проверяем, можем ли мы купить этот продукт, поэтому пока что тут просто будет очередной флажок
                 flag = True
@@ -352,6 +335,24 @@ def handle_dialog(request, response, user_storage, database):
                 else:
                     handler = "null"
             handler = "null" if not handler else handler
+
+        #!! Необходимо вынести в отдельную фунцию.
+        if handler.endswith("other") or handler == "null":
+            user_storage['suggests'] = [
+                "Основная информация",
+                "Источник дохода",
+                "Образование и курсы",
+                "Конфигурация рабочей системы",
+                "Помощь"
+            ]
+
+            handler = "other->other_next"
+
+            output_message = "Похоже мы вернулись в начало. \n Доступные опции: {}".format(
+                ", ".join(user_storage['suggests']))
+
+            buttons, user_storage = get_suggests(user_storage)
+            return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
 
         if handler == "profit_page":
             job = "сюда вставить получение работы пользователя"
@@ -430,21 +431,41 @@ def handle_dialog(request, response, user_storage, database):
                 buttons, user_storage = get_suggests(user_storage)
                 return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
 
-    if handler == "null":
-        user_storage['suggests'] = [
-            "Источник дохода",
-            "Образование и курсы",
-            "Конфигурация рабочей системы",
-            "Помощь",
-            "Назад"
-        ]
 
-        handler = "other->other_next"
+        if handler.endswith("freelance"):
+            # !! Вот тут нужно сделать получение нынешней подработки из БД в переменную ниже
+            current_freelance = ["нет","вреня, которое осталось"]
+            user_storage['suggests'] = ["Назад"]
+            if current_freelance[0] == "нет":
+                #!! Это снова тот индекс(уровень игрока, да).
+                index = "1"
+                freelance_list = read_answers_data("data/list")["freelance"][index]
+                handler += "->freelance_next"
+                lst = ["{} Оплата: {} Время выполнения {}".format(i, freelance_list[i][0], freelance_list[i][1]) for i in freelance_list.keys()]
+                output_message = "Список доступных подработок: \n {}\n " \
+                                 "Выберите желаемую.  \n Доступные команды: Назад".format("\n".join(lst),)
+            else:
+                output_message = "В данный момент вы заняты {}, подождите {}, тогда вы сможете взять новое задание.".format(current_freelance[0], current_freelance[1])
 
-        output_message = "Доступные разделы: {}".format(", ".join(user_storage['suggests']))
+            buttons, user_storage = get_suggests(user_storage)
+            return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
 
-        buttons, user_storage = get_suggests(user_storage)
-        return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
+        if handler.endswith("freelance_next"):
+            # !! Это снова тот индекс(уровень игрока, да).
+            index = "1"
+            user_storage['suggests'] = ["Назад"]
+            freelance_list = read_answers_data("data/list")["freelance"][index]
+            for i in freelance_list.keys():
+                if input_message in i:
+                    # !! Вот тут нужно сделать внесение новой подработки в БД из переменной ниже
+                    current_freelance = [i, freelance_list[i][0], freelance_list[i][1]]
+                    output_message = "Подработка {} успешно взята на исполение. Оплата: {} Время выполнения" \
+                                     " {}".format(i, current_freelance[1], current_freelance[2])
+                    buttons, user_storage = get_suggests(user_storage)
+                    return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
+
+
+                    # start_page->other
 
     if input_message in ['нет', 'не хочется', 'в следующий раз', 'выход', "не хочу", 'выйти']:
         answered = True
@@ -453,7 +474,7 @@ def handle_dialog(request, response, user_storage, database):
         response.set_tts(aliceSpeakMap(choice,True))
         response.end_session = True
         return response, user_storage
-
+    print(handler)
     choice = random.choice(aliceAnswers["cantTranslate"])
     response.set_text(aliceSpeakMap(choice))
     response.set_tts(aliceSpeakMap(choice, True))
