@@ -66,6 +66,9 @@ class DatabaseManager:
         if 'primary' in non_converted_type.lower():
             converted_type += ' PRIMARY KEY'
 
+        if 'default' in non_converted_type.lower():
+            converted_type += " DEFAULT " + ' '.join(non_converted_type.split()[2:])
+
         return converted_type
 
     def convert_dict_to_string(self, non_converted_dict: dict, separator=' ') -> str:
@@ -145,16 +148,33 @@ class DatabaseManager:
         return ', '.join(result_list) if len(result_list) > 1 else result_list[0]
 
     @staticmethod
-    def check_for_hidden_list_sequence(input_obj, sequence='#&%') -> bool:  #
+    def check_for_hidden_list_sequence(input_obj, sequence='#&%') -> bool:
+        """
+        Специфическая функция. Позволяет искать некую подстроку в
+        записях, взятых из базы данных
+        =================================================================
+        :param input_obj: объект вида [(), ()]. Вложенность не глубже
+        двух уровней и НЕ МЕНЬШЕ двух уровней. Подстроено под
+        стандартный возврат из базы данных методом SELECT
+        :param sequence: искомая последовательность
+        :return: значение True / False от нашёл / не нашёл
+        """
         for outer_item in input_obj:
             for inner_item in outer_item:
                 if type(inner_item) is str:
-                    if inner_item.find(sequence):
+                    if inner_item.find(sequence) != -1:
                         return True
         return False
 
     @staticmethod
-    def convert_strange_str_to_list(string: str, separator: str) -> list:  # string[1:len(string)-1]
+    def convert_strange_str_to_list(string: str, separator: str) -> list:
+        """
+        Специфическая функция. Конвертирует странную строку в лист.
+        =================================================================
+        :param string: строка вида '[entry1#&% запись2 #&% "3"]'
+        :param separator: разделитель, по которому список будет образован
+        :return: список
+        """
         return string[1:len(string)-1].split(separator)
 
     def create_table(self, table_name: str, columns: dict):
@@ -191,19 +211,19 @@ class DatabaseManager:
         :param values_dict: словарь, содержащий название столбца
         и начальные данные.
         """
-        # try:
-        with self.connection.cursor() as cursor:
-            columns, values = ', '.join(list(values_dict.keys())), \
-                              ', '.join(self.convert_digits_to_string(list(values_dict.values())))
-            parentheses = '{}, ' * (values.count(',') + 1)
-            query = " 'INSERT INTO " + table_name + "(" + columns + ") VALUES(" + parentheses + ")'.format({})"\
-                .format(self.cover_with_braces(self.cover_with_braces(values, braces_type="'")))
-            query = eval(query.replace(', )', ')'))
+        try:
+            with self.connection.cursor() as cursor:
+                columns, values = ', '.join(list(values_dict.keys())), \
+                                  ', '.join(self.convert_digits_to_string(list(values_dict.values())))
+                parentheses = '{}, ' * (values.count(',') + 1)
+                query = " 'INSERT INTO " + table_name + "(" + columns + ") VALUES(" + parentheses + ")'.format({})"\
+                    .format(self.cover_with_braces(self.cover_with_braces(values, braces_type="'")))
+                query = eval(query.replace(', )', ')'))
 
-            cursor.execute(query)
-        # except Exception as exc:
-        #     self.connection.rollback()
-        #     print('Дата: {0}\nОШИБКА:{1}'.format(time.strftime("%d.%m.%Y - %H.%M.%S", time.localtime()), exc))
+                cursor.execute(query)
+        except Exception as exc:
+            self.connection.rollback()
+            print('Дата: {0}\nОШИБКА:{1}'.format(time.strftime("%d.%m.%Y - %H.%M.%S", time.localtime()), exc))
 
     def get_entry(self, table_name: str, required_values: list, user_id=''):
         """
@@ -367,12 +387,11 @@ def basic_functionality_test():
                              port='5432', dbname='programmer_simulator')
     db_obj.create_table('users',
                         {'user_id': 'serial primary',
-                         'StringTest': 'str', 'IntTest': 'int', 'FloatTest': 'float',
-                         'BoolTest': 'bool'
+                         'StringTest': "str DEFAULT 'дефолт string'", 'IntTest': 'int DEFAULT 0',
+                         'FloatTest': 'float', 'BoolTest': 'bool'
                          })
     db_obj.add_entries('users',
-                       {'StringTest': 'strings wow', 'IntTest': 1, 'FloatTest': 3.14,
-                        'BoolTest': True
+                       {'FloatTest': 3.14, 'BoolTest': True
                         })
     db_obj.add_entries('users',
                        {'StringTest': 'Dima', 'IntTest': 17, 'FloatTest': 13.37,
@@ -383,7 +402,8 @@ def basic_functionality_test():
     print(db_obj.get_all_entries('users', user_id='2'))
     db_obj.update_entries('users', '2', {'IntTest': 228282}, update_type='rewrite')
     db_obj.update_entries('users', '2', {'FloatTest': 12.21}, update_type='add')
-    db_obj.update_entries('users', '2', {'StringTest': 'concat'}, update_type='concat')
+    db_obj.update_entries('users', '2', {'StringTest': 'concat this'}, update_type='concat')
+    db_obj.update_entries('users', '2', {'BoolTest': True}, update_type='rewrite')
     print(db_obj.get_all_entries('users'))
     db_obj.delete_entry('users', {'user_id': '1'})
     print(db_obj.get_all_entries('users'))
