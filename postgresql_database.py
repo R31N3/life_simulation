@@ -9,6 +9,7 @@ class DatabaseManager:
     def __init__(self, host, user, password, dbname, port='5432'):
         """
         Производит первичное подключение к базе данных
+        При инициализации
         =================================================================
         :param host: database server address e.g., localhost or an IP address
         :param user: the username used to authenticate.
