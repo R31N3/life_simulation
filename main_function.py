@@ -40,15 +40,23 @@ def map_answer(myAns, withAccent=False):
         return myAns.replace(".", "").replace(";", "").strip()
     return myAns.replace(".", "").replace(";", "").replace("+", "").strip()
 
+def ЯНичегоНеПонял(респунсь, юсер_стораждж, буттоньсы = []):
+    мэссаждж = random.choice(aliceAnswers["cantTranslate"])
+    респунсь.set_text(aliceSpeakMap(мэссаждж))
+    респунсь.set_tts(aliceSpeakMap(мэссаждж, True))
+    буттоньсы, user_storage = get_suggests(юсер_стораждж)
+    респунсь.set_buttons(буттоньсы)
+    return респунсь, user_storage
 
 # Ну вот эта функция всем функциям функция, ага. Замена постоянному формированию ответа, ага, экономит 4 строчки!!
 def НуПридумаемНазваниеПотом(респунсь, юсер_стораждж, мэссаждж, буттоньсы, флажок=False):
     # ща будет магия
+    текст_муссаждж = мэссаждж.split("Доступные")[0]+" Выберите один из доступных разделов" if "Доступные" in мэссаждж else мэссаждж and "Подработка" not in мэссаждж
     if флажок:
-        респунсь.set_text(aliceSpeakMap(мэссаждж))
+        респунсь.set_text(aliceSpeakMap(текст_муссаждж))
         респунсь.set_tts(aliceSpeakMap(мэссаждж, True))
     else:
-        респунсь.set_text(мэссаждж)
+        респунсь.set_text(текст_муссаждж)
         респунсь.set_tts(мэссаждж)
     buttons, user_storage = get_suggests(юсер_стораждж)
     респунсь.set_buttons(буттоньсы)
@@ -131,8 +139,11 @@ def handle_dialog(request, response, user_storage, database):
         # start_page
         if input_message == "назад":
             splitted = handler.split("->")
-            if handler.endswith("_next"):
+            print(handler.count("_next"))
+            if handler.count("_next") == 2:
                 handler = "->".join(splitted[:-3])
+            elif handler.count("_next"):
+                handler = "other"
             else:
                 if len(splitted) > 1:
                     handler = "->".join(splitted[:-2])
@@ -169,7 +180,6 @@ def handle_dialog(request, response, user_storage, database):
                 "Восполнение голода",
                 "Восполнение здоровья",
                 "Восполнение настроения",
-                "Другие основные разделы",
                 "Назад"
             ]
 
@@ -184,157 +194,158 @@ def handle_dialog(request, response, user_storage, database):
 
         # start_page -> start_next
         if handler.endswith("start_next"):
-            if input_message == "восполнение голода":
+            if input_message == "восполнение голода" or input_message == "голод":
                 handler += "->food_recharge"
-            elif input_message == "восполнение здоровья":
+            elif input_message == "восполнение здоровья" or input_message == "здоровье":
                 handler += "->health_recharge"
-            elif input_message == "восполнение настроения":
+            elif input_message == "восполнение настроения" or input_message == "настроение":
                 handler += "->mood_recharge"
-            elif input_message == "другие основные разделы":
-                handler += "->other"
 
-        # start_page -> start_next -> food_recharge
-        if handler.endswith("food_recharge"):
-            food = "сюда вставить получение голода пользователя"
+        if handler.count("food") > 0:
+            # start_page -> start_next -> food_recharge
+            if handler.endswith("food_recharge"):
+                food = "сюда вставить получение голода пользователя"
 
-            index = "1"
-            food_list = read_answers_data("data/list")["food"][index]
-            user_storage['suggests'] = [i + " цена {} восполнение {}".format(food_list[i][0], food_list[i][1]) for i in
-                                        food_list.keys()]
-            handler += "->food_next"
+                index = "1"
+                food_list = read_answers_data("data/list")["food"][index]
+                user_storage['suggests'] = [i + " цена {} восполнение {}".format(food_list[i][0], food_list[i][1]) for i in
+                                            food_list.keys()]
+                handler += "->food_next"
 
-            output_message = "Ваш голод: {} Доступные продукты: \n {}"\
-                .format(food, ",\n".join(user_storage['suggests'][:-1])
-                        + "\n Доступные опции: Назад")
+                output_message = "Ваш голод: {} Доступные продукты: \n {}"\
+                    .format(food, ",\n".join(user_storage['suggests'][:-1])
+                            + "\n Доступные опции: Назад")
 
-            buttons, user_storage = get_suggests(user_storage)
-            return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
+                buttons, user_storage = get_suggests(user_storage)
+                return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
 
-        # start_page -> start_next -> food_recharge -> food_next
-        if handler.endswith("->food_next"):
-            # !! Необходимо добавить в БД уровень игрока, который я потом буду подсчитывать, стартовый - первый.
-            # !! Этот уровень и есть индекс, агааа.
-            index = "1"
-            product = ""
-            food_list = read_answers_data("data/list")["food"][index]
-            for i in food_list.keys():
-                if i.lower().startswith(input_message):
-                    product = i
-                    product_price = food_list[i][0]
-                    product_weight = food_list[i][1]
+            # start_page -> start_next -> food_recharge -> food_next
+            if handler.endswith("->food_next"):
+                # !! Необходимо добавить в БД уровень игрока, который я потом буду подсчитывать, стартовый - первый.
+                # !! Этот уровень и есть индекс, агааа.
+                index = "1"
+                product = ""
+                food_list = read_answers_data("data/list")["food"][index]
+                for i in food_list.keys():
+                    if i.lower().startswith(input_message):
+                        product = i
+                        product_price = food_list[i][0]
+                        product_weight = food_list[i][1]
 
-            if product:
-                # !! Дальше мы проверяем, можем ли мы купить этот продукт,
-                # поэтому пока что тут просто будет очередной флажок
-                flag = True
-                if flag == True:
-                    output_message = "Продукт {} успешно преобретен. \n Доступные продукты: {}"\
-                        .format(product, ",\n".join(user_storage['suggests'][:-1]) + "\n Доступная команда: Назад")
+                if product:
+                    # !! Дальше мы проверяем, можем ли мы купить этот продукт,
+                    # поэтому пока что тут просто будет очередной флажок
+                    flag = True
+                    if flag == True:
+                        output_message = "Продукт {} успешно преобретен. \n Доступные продукты: {}"\
+                            .format(product, ",\n".join(user_storage['suggests'][:-1]) + "\n Доступная команда: Назад")
+                    else:
+                        output_message = "Продукт {} нельзя преобрести, нехватает денег. \n Доступные продукты:{} "\
+                            .format(product, ",\n".join(user_storage['suggests'][:-1]) + "\n Доступная команда: Назад")
                 else:
-                    output_message = "Продукт {} нельзя преобрести, нехватает денег. \n Доступные продукты:{} "\
-                        .format(product, ",\n".join(user_storage['suggests'][:-1]) + "\n Доступная команда: Назад")
-            else:
-                output_message = "Продукт {} не найден, повторите запрос".format(input_message)
+                    output_message = "Продукт {} не найден, повторите запрос".format(input_message)
 
-            buttons, user_storage = get_suggests(user_storage)
-            return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
+                buttons, user_storage = get_suggests(user_storage)
+                return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
 
-        # start_page -> start_next -> food_recharge -> health_recharge
-        if handler.endswith("health_recharge"):
-            health = "сюда вставить получение здоровья пользователя"
+        if handler.count("health") > 0:
+            # start_page -> start_next -> food_recharge -> health_recharge
+            if handler.endswith("health_recharge"):
+                health = "сюда вставить получение здоровья пользователя"
 
-            index = "1"
-            food_list = read_answers_data("data/list")["health"][index]
-            user_storage['suggests'] = \
-                [i + " цена {} восполнение {}".format(food_list[i][0], food_list[i][1]) for i in food_list.keys()]
+                index = "1"
+                food_list = read_answers_data("data/list")["health"][index]
+                user_storage['suggests'] = \
+                    [i + " цена {} восполнение {}".format(food_list[i][0], food_list[i][1]) for i in food_list.keys()]
 
-            handler += "->health_next"
+                handler += "->health_next"
 
-            output_message = "Ваше здоровье {} \n Доступные методы восстановления здоровья: \n {}"\
-                .format(health, ",\n".join(user_storage['suggests'][:-1])+ "\n Доступная команда: Назад")
+                output_message = "Ваше здоровье {} \n Доступные методы восстановления здоровья: \n {}"\
+                    .format(health, ",\n".join(user_storage['suggests'][:-1])+ "\n Доступная команда: Назад")
 
-            buttons, user_storage = get_suggests(user_storage)
-            return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
+                buttons, user_storage = get_suggests(user_storage)
+                return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
 
-        # start_page -> start_next -> food_recharge -> health_next
-        if handler.endswith("->health_next"):
-            # !! Необходимо добавить в БД уровень игрока, который я потом буду подсчитывать, стартовый - первый.
-            # !! Этот уровень и есть индекс, агааа.
-            index = "1"
-            product = ""
-            food_list = read_answers_data("data/list")["health"][index]
-            for i in food_list.keys():
-                if i.lower().startswith(input_message):
-                    product = i
-                    product_price = food_list[i][0]
-                    product_weight = food_list[i][1]
+            # start_page -> start_next -> food_recharge -> health_next
+            if handler.endswith("->health_next"):
+                # !! Необходимо добавить в БД уровень игрока, который я потом буду подсчитывать, стартовый - первый.
+                # !! Этот уровень и есть индекс, агааа.
+                index = "1"
+                product = ""
+                food_list = read_answers_data("data/list")["health"][index]
+                for i in food_list.keys():
+                    if i.lower().startswith(input_message):
+                        product = i
+                        product_price = food_list[i][0]
+                        product_weight = food_list[i][1]
 
-            if product:
-                # !! Дальше мы проверяем, можем ли мы купить этот продукт, 
-                # поэтому пока что тут просто будет очередной флажок
-                flag = True
-                if flag == True:
-                    output_message = "Метод {} успешно оплачен. \n Доступные методы восстановления здоровья: {}"\
-                        .format(product, ",\n".join(user_storage['suggests'][:-1])+ "\n Доступная команда: Назад")
+                if product:
+                    # !! Дальше мы проверяем, можем ли мы купить этот продукт,
+                    # поэтому пока что тут просто будет очередной флажок
+                    flag = True
+                    if flag == True:
+                        output_message = "Метод {} успешно оплачен. \n Доступные методы восстановления здоровья: {}"\
+                            .format(product, ",\n".join(user_storage['suggests'][:-1])+ "\n Доступная команда: Назад")
+                    else:
+                        output_message = "Метод {} нельзя оплатить, нехватает денег. \n Доступные методы восстановления" \
+                                         " здоровья: {}".format(product, ",\n".join(user_storage['suggests'][:-1])
+                                                                + "\n Доступная команда: Назад")
                 else:
-                    output_message = "Метод {} нельзя оплатить, нехватает денег. \n Доступные методы восстановления" \
-                                     " здоровья: {}".format(product, ",\n".join(user_storage['suggests'][:-1])
-                                                            + "\n Доступная команда: Назад")
-            else:
-                output_message = "Метод {} не найден, повторите запрос. \n Доступные методы восстановления здоровья:" \
-                                 " {}".format(input_message, ",\n".join(user_storage['suggests'][:-1])
-                                              + "\n Доступная команда: Назад")
+                    output_message = "Метод {} не найден, повторите запрос. \n Доступные методы восстановления здоровья:" \
+                                     " {}".format(input_message, ",\n".join(user_storage['suggests'][:-1])
+                                                  + "\n Доступная команда: Назад")
 
-            buttons, user_storage = get_suggests(user_storage)
-            return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
+                buttons, user_storage = get_suggests(user_storage)
+                return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
 
-        # start_page -> start_next -> food_recharge -> mood_recharge
-        if handler.endswith("mood_recharge"):
-            mood = "сюда вставить получение здоровья пользователя"
+        if handler.count("mood") > 0:
+            # start_page -> start_next -> food_recharge -> mood_recharge
+            if handler.endswith("mood_recharge"):
+                mood = "сюда вставить получение здоровья пользователя"
 
-            index = "1"
-            food_list = read_answers_data("data/list")["mood"][index]
-            user_storage['suggests'] = [i+" цена {} восполнение {}".format(food_list[i][0], food_list[i][1]) for i in food_list.keys()]
+                index = "1"
+                food_list = read_answers_data("data/list")["mood"][index]
+                user_storage['suggests'] = [i+" цена {} восполнение {}".format(food_list[i][0], food_list[i][1]) for i in food_list.keys()]
 
-            handler += "->mood_next"
+                handler += "->mood_next"
 
-            output_message = "Ваше настроение {} \n Доступные методы восстановления настроения: \n {}"\
-                .format(mood, ",\n".join(user_storage['suggests'][:-1])+ "\n Доступная команда: Назад")
+                output_message = "Ваше настроение {} \n Доступные методы восстановления настроения: \n {}"\
+                    .format(mood, ",\n".join(user_storage['suggests'][:-1])+ "\n Доступная команда: Назад")
 
-            buttons, user_storage = get_suggests(user_storage)
-            return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
+                buttons, user_storage = get_suggests(user_storage)
+                return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
 
-        # start_page -> start_next -> food_recharge -> food_next
-        if handler.endswith("->mood_next"):
-            # !! Необходимо добавить в БД уровень игрока, который я потом буду подсчитывать, стартовый - первый.
-            # !! Этот уровень и есть индекс, агааа.
-            index = "1"
-            product = ""
-            food_list = read_answers_data("data/list")["mood"][index]
-            for i in food_list.keys():
-                if i.lower().startswith(input_message):
-                    product = i
-                    product_price = food_list[i][0]
-                    product_weight = food_list[i][1]
+            # start_page -> start_next -> food_recharge -> food_next
+            if handler.endswith("->mood_next"):
+                # !! Необходимо добавить в БД уровень игрока, который я потом буду подсчитывать, стартовый - первый.
+                # !! Этот уровень и есть индекс, агааа.
+                index = "1"
+                product = ""
+                food_list = read_answers_data("data/list")["mood"][index]
+                for i in food_list.keys():
+                    if i.lower().startswith(input_message):
+                        product = i
+                        product_price = food_list[i][0]
+                        product_weight = food_list[i][1]
 
-            if product:
-                # !! Дальше мы проверяем, можем ли мы купить этот продукт, 
-                # поэтому пока что тут просто будет очередной флажок
-                flag = True
-                if flag == True:
-                    output_message = "Метод {} успешно оплачен. \n Доступные методы восстановления настроения: {}"\
-                        .format(product, ",\n".join(user_storage['suggests'][:-1])+ "\n Доступная команда: Назад")
+                if product:
+                    # !! Дальше мы проверяем, можем ли мы купить этот продукт,
+                    # поэтому пока что тут просто будет очередной флажок
+                    flag = True
+                    if flag == True:
+                        output_message = "Метод {} успешно оплачен. \n Доступные методы восстановления настроения: {}"\
+                            .format(product, ",\n".join(user_storage['suggests'][:-1])+ "\n Доступная команда: Назад")
+                    else:
+                        output_message = "Метод {} нельзя оплатить, нехватает денег. \n Доступные методы восстановления" \
+                                         " настроения: {}".format(product, ",\n".join(user_storage['suggests'][:-1])
+                                                                  + "\n Доступная команда: Назад")
                 else:
-                    output_message = "Метод {} нельзя оплатить, нехватает денег. \n Доступные методы восстановления" \
-                                     " настроения: {}".format(product, ",\n".join(user_storage['suggests'][:-1])
-                                                              + "\n Доступная команда: Назад")
-            else:
-                output_message = "Метод {} не найден, повторите запрос. \n Доступные методы восстановления здоровья:" \
-                                 " {}".format(input_message, ",\n".join(user_storage['suggests'][:-1])
-                                              + "\n Доступная команда: Назад")
+                    output_message = "Метод {} не найден, повторите запрос. \n Доступные методы восстановления здоровья:" \
+                                     " {}".format(input_message, ",\n".join(user_storage['suggests'][:-1])
+                                                  + "\n Доступная команда: Назад")
 
-            buttons, user_storage = get_suggests(user_storage)
-            return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
+                buttons, user_storage = get_suggests(user_storage)
+                return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
 
     if handler.startswith("profit_page"):
         if input_message == "назад" and not handler.endswith("job"):
@@ -399,89 +410,99 @@ def handle_dialog(request, response, user_storage, database):
             elif input_message == "бизнес":
                 handler += "->business"
 
-        if handler.endswith("job"):
-            # !! Вот тут нужно сделать получение работы из БД
-            job = "1"
-            job_list = read_answers_data("data/list")["job"]
-            keys = sorted(job_list.keys())
-            user_storage['suggests'] = ["Назад"]
-            # Если у нас не максимально возможная ЗП, выдаем список вакансий длиной максимум до 10
-            if int(job) != len(keys):
-                border = len(keys[int(job):]) % 10 if len(keys[int(job):]) % 10 != 0 else 10
-                handler += "->job_next"
-                lst = ["Текущая: {} Зарплата: {}".format(job_list[job][0], job_list[job][1])]
-                lst += keys[int(job):border + 1]
-                output_message = "Список вакансий: \n {} \n {} \n Выберите желаемую.  \n Доступные команды: Назад"\
-                    .format(lst[0],
-                            "\n".join(["{} Зарплата: {}".format(job_list[i][0], job_list[i][1]) for i in lst[1:]]))
-            else:
-                output_message = "Список вакансий: \n {} \n Выбирать больше не из чего. \n Доступные команды: Назад"\
-                    .format(job_list[job])
+        if handler.count("job") > 0:
+            if handler.endswith("job"):
+                # !! Вот тут нужно сделать получение работы из БД
+                job = "1"
+                job_list = read_answers_data("data/list")["job"]
+                keys = sorted(job_list.keys())
+                user_storage['suggests'] = ["Назад"]
+                # Если у нас не максимально возможная ЗП, выдаем список вакансий длиной максимум до 10
+                if int(job) != len(keys):
+                    border = len(keys[int(job):]) % 10 if len(keys[int(job):]) % 10 != 0 else 10
+                    handler += "->job_next"
+                    lst = ["Текущая: {} Зарплата: {}".format(job_list[job][0], job_list[job][1])]
+                    lst += keys[int(job):border + 1]
+                    output_message = "Список вакансий: \n {} \n {} \n Выберите желаемую.  \n Доступные команды: Назад"\
+                        .format(lst[0],
+                                "\n".join(["{} Зарплата: {}".format(job_list[i][0], job_list[i][1]) for i in lst[1:]]))
+                else:
+                    output_message = "Список вакансий: \n {} \n Выбирать больше не из чего. \n Доступные команды: Назад"\
+                        .format(job_list[job])
 
-            buttons, user_storage = get_suggests(user_storage)
-            return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
-
-        if handler.endswith("job_next"):
-            job = "1"
-            user_storage['suggests'] = ["Назад"]
-            handler = "->".join(handler.split("->")[:-1])
-            output_message = ""
-            # !! Вот сюда засунуть нужно образование игрока
-            user_requirements = ["..."]
-            job_list = read_answers_data("data/list")["job"]
-            keys = sorted(job_list.keys())
-            border = len(keys[int(job):]) % 10 if len(keys[int(job):]) % 10 != 0 else 10
-            for i in keys[int(job):border + 1]:
-                if input_message in job_list[i][0].lower():
-                    difference = [j for j in job_list[i][2] if j not in user_requirements]
-                    if not difference:
-                        # !! Тут мы меняем работу на новую, если у нас совпадают все требования
-                        job = i
-                        output_message = "Вы успешно повысились до {}. Доступные команды: Назад"\
-                            .format(job_list[job][0])
-                    else:
-                        output_message = "Повышение невозможно, нехватает следующего: {}. Доступные команды: Назад"\
-                            .format(", ".join(difference))
-                    break
-            if output_message:
                 buttons, user_storage = get_suggests(user_storage)
                 return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
 
-        if handler.endswith("freelance"):
-            # !! Вот тут нужно сделать получение нынешней подработки из БД в переменную ниже
-            current_freelance = ["нет", "вреня, которое осталось"]
-            user_storage['suggests'] = ["Назад"]
-            if current_freelance[0] == "нет":
-                # !! Это снова тот индекс(уровень игрока, да).
-                index = "1"
-                freelance_list = read_answers_data("data/list")["freelance"][index]
-                handler += "->freelance_next"
-                lst = ["{} Оплата: {} Время выполнения {}"
-                           .format(i, freelance_list[i][0], freelance_list[i][1]) for i in freelance_list.keys()]
-                output_message = "Список доступных подработок: \n {}\n " \
-                                 "Выберите желаемую.  \n Доступные команды: Назад".format("\n".join(lst),)
-            else:
-                output_message = "В данный момент вы заняты {}, подождите {}, тогда вы сможете взять новое задание."\
-                    .format(current_freelance[0], current_freelance[1])
-
-            buttons, user_storage = get_suggests(user_storage)
-            return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
-
-        if handler.endswith("freelance_next"):
-            # !! Это снова тот индекс(уровень игрока, да).
-            index = "1"
-            user_storage['suggests'] = ["Назад"]
-            freelance_list = read_answers_data("data/list")["freelance"][index]
-            for i in freelance_list.keys():
-                if input_message in i:
-                    # !! Вот тут нужно сделать внесение новой подработки в БД из переменной ниже
-                    current_freelance = [i, freelance_list[i][0], freelance_list[i][1]]
-                    output_message = "Подработка {} успешно взята на исполение. Оплата: {} Время выполнения" \
-                                     " {}".format(i, current_freelance[1], current_freelance[2])
+            if handler.endswith("job_next"):
+                job = "1"
+                user_storage['suggests'] = ["Назад"]
+                handler = "->".join(handler.split("->")[:-1])
+                output_message = ""
+                # !! Вот сюда засунуть нужно образование игрока
+                user_requirements = ["..."]
+                job_list = read_answers_data("data/list")["job"]
+                keys = sorted(job_list.keys())
+                border = len(keys[int(job):]) % 10 if len(keys[int(job):]) % 10 != 0 else 10
+                for i in keys[int(job):border + 1]:
+                    if input_message in job_list[i][0].lower():
+                        difference = [j for j in job_list[i][2] if j not in user_requirements]
+                        if not difference:
+                            # !! Тут мы меняем работу на новую, если у нас совпадают все требования
+                            job = i
+                            output_message = "Вы успешно повысились до {}. Доступные команды: Назад"\
+                                .format(job_list[job][0])
+                        else:
+                            output_message = "Повышение невозможно, нехватает следующего: {}. Доступные команды: Назад"\
+                                .format(", ".join(difference))
+                        break
+                if output_message:
                     buttons, user_storage = get_suggests(user_storage)
                     return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
 
-                    # start_page->other
+        if handler.count("freelance") > 0:
+            if handler.endswith("freelance"):
+                # !! Вот тут нужно сделать получение нынешней подработки из БД в переменную ниже
+                current_freelance = ["нет", "вреня, которое осталось"]
+                user_storage['suggests'] = ["Назад"]
+                if current_freelance[0] == "нет":
+                    # !! Это снова тот индекс(уровень игрока, да).
+                    index = "1"
+                    freelance_list = read_answers_data("data/list")["freelance"][index]
+                    handler += "->freelance_next"
+                    lst = ["{} Оплата: {} Время выполнения {}"
+                               .format(i, freelance_list[i][0], freelance_list[i][1]) for i in freelance_list.keys()]
+                    output_message = "Список доступных подработок: \n {}\n " \
+                                     "Выберите желаемую.  \n Доступные команды: Назад".format("\n".join(lst))
+                else:
+                    output_message = "В данный момент вы заняты {}, подождите {}, тогда вы сможете взять новое задание."\
+                        .format(current_freelance[0], current_freelance[1])
+
+                buttons, user_storage = get_suggests(user_storage)
+                return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
+
+            if handler.endswith("freelance_next"):
+                # !! Это снова тот индекс(уровень игрока, да).
+                index = "1"
+                user_storage['suggests'] = ["Назад"]
+                freelance_list = read_answers_data("data/list")["freelance"][index]
+                lst = ["{} Оплата: {} Время выполнения {}"
+                           .format(i, freelance_list[i][0], freelance_list[i][1]) for i in freelance_list.keys()]
+                for i in freelance_list.keys():
+                    if input_message in i:
+                        # !! Вот тут нужно сделать внесение новой подработки в БД из переменной ниже
+                        current_freelance = [i, freelance_list[i][0], freelance_list[i][1]]
+                        output_message = "Подработка {} успешно взята на исполение. Оплата: {} Время выполнения" \
+                                         " {} Доступные команды: Назад".format(i, current_freelance[1], current_freelance[2])
+                        buttons, user_storage = get_suggests(user_storage)
+                        return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
+
+                output_message = "Подработка {} не найдена. Выберите одну из доступных: \n {} \n Доступные команды: Назад"\
+                    .format(input_message, "\n".join(lst))
+                buttons, user_storage = get_suggests(user_storage)
+                return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
+
+            return ЯНичегоНеПонял(response, user_storage)
+
 
     if input_message in ['нет', 'не хочется', 'в следующий раз', 'выход', "не хочу", 'выйти']:
         answered = True
@@ -491,12 +512,9 @@ def handle_dialog(request, response, user_storage, database):
         response.end_session = True
         return response, user_storage
     print(handler)
-    choice = random.choice(aliceAnswers["cantTranslate"])
-    response.set_text(aliceSpeakMap(choice))
-    response.set_tts(aliceSpeakMap(choice, True))
+
     buttons, user_storage = get_suggests(user_storage)
-    response.set_buttons(buttons)
-    return response, user_storage
+    return ЯНичегоНеПонял(response, user_storage, buttons)
 
 
 def get_suggests(user_storage):
