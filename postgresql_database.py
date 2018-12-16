@@ -55,7 +55,8 @@ class DatabaseManager:
         """
         converted_type = ''
         types_dict = {'serial': 'SERIAL', 'str':   'TEXT',  'int':  'INTEGER',
-                      'float':  'REAL',   'bytes': 'BYTEA', 'bool': 'BOOLEAN'}
+                      'float':  'REAL',   'bytes': 'BYTEA', 'bool': 'BOOLEAN',
+                      'list': 'TEXT'}
 
         if non_converted_type.split()[0].upper() in types_dict.values():
             converted_type += non_converted_type.split()[0].upper()
@@ -143,6 +144,19 @@ class DatabaseManager:
                 result_list.append(item)
         return ', '.join(result_list) if len(result_list) > 1 else result_list[0]
 
+    @staticmethod
+    def check_for_hidden_list_sequence(input_obj, sequence='#&%') -> bool:  #
+        for outer_item in input_obj:
+            for inner_item in outer_item:
+                if type(inner_item) is str:
+                    if inner_item.find(sequence):
+                        return True
+        return False
+
+    @staticmethod
+    def convert_strange_str_to_list(string: str, separator: str) -> list:  # string[1:len(string)-1]
+        return string[1:len(string)-1].split(separator)
+
     def create_table(self, table_name: str, columns: dict):
         """
         Создаём таблицу, если такой ещё нет.
@@ -227,7 +241,9 @@ class DatabaseManager:
         else:
             result = cursor.fetchall()
             cursor.close()
-        return result
+        return result \
+            if not self.check_for_hidden_list_sequence(result) \
+            else self.convert_strange_str_to_list(result, '#&%')
 
     def get_all_entries(self, table_name: str, user_id=''):
         """
@@ -258,7 +274,9 @@ class DatabaseManager:
         else:
             result = cursor.fetchall()
             cursor.close()
-        return result
+        return result \
+            if not self.check_for_hidden_list_sequence(result) \
+            else self.convert_strange_str_to_list(result, '#&%')
 
     def update_entries(self, table_name: str, user_id: str, values_dict: dict,
                        update_type='rewrite', separator='|'):
