@@ -15,7 +15,6 @@ from function_example import handle_dialog
 import postgresql_database
 
 # Импортируем модуль грамматического анализа
-import pymorphy2
 
 # Импортируем подмодули Flask для запуска веб-сервиса.
 from flask import Flask, request
@@ -42,17 +41,12 @@ def init_database(host, user, password, dbname):
     """
     psdb = postgresql_database.DatabaseManager(host, user, password, dbname)
     psdb.create_table("users_info",
-                      {"handler": "string DEFAULT ''", "Named": "bool DEFAULT False", "Experience": "int DEFAULT 0",
-                       "Money": "int DEFAULT 1000", "Food": "int DEFAULT 100",
+                      {'user_id': "str primary", "handler": "string DEFAULT ''", "Named": "bool DEFAULT False", "Experience": "int DEFAULT 0",
+                       "Money": "int DEFAULT 1000", "Food": "int DEFAULT 100", "Exp" : "int DEFAULT 0", "Lvl" : "str DEFAULT '0'",
+                       "Job" : "str DEFAULT '0'",  "Freelance" : "list DEFAULT '[zp#&%time#&%exp]'", "credit" : "list DEFAULT '[index#&%money#&%time]'",
+                       "deposit" : "int DEFAULT 0",
                        "Mood": "int DEFAULT 100", "Health": "int DEFAULT 100", "Money_Waste": "int DEFAULT 0",
-                       "Food_Waste": "int DEFAULT 20", "Mood_Waste": "int DEFAULT 20",
-                       "Health_Waste": "int DEFAULT 0", "Date": "str DEFAULT '01.01.1970'",
-                       "CPU": "str DEFAULT 'Pentagnome 1488'", "RAM": "str DEFAULT '10MB'",
-                       "Disk": "str DEFAULT '10GB'", "VRAM": "str", "Monitor": "str DEFAULT 'MONITORCHEK'",
-                       "LAN": "str DEFAULT '10kbps'", "Operation_System": "str DEFAULT 'SHINDOWS'",
-                       "Antivirus": "str DEFAULT 'Cashpersky'", "Programmes": "list", "Education": "list",
-                       "Courses": "list", "Books": "list", "Job": "str", "Second_Job": "list", "credit": "list",
-                       "Vehicle": "str DEFAULT 'kostyleped'", "Business": "str DEFAULT ''", "Events": "list"})
+                       "Food_Waste": "int DEFAULT 20", "Mood_Waste": "int DEFAULT 20", })
     return psdb
 
 
