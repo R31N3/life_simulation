@@ -8,9 +8,8 @@ import time
 class DatabaseManager:
     def __init__(self, host, user, password, dbname, port='5432'):
         """
-        Производит первичное подключение к базе данных
-        При инициализации
-        =================================================================
+        Производит первичное подключение к базе данных при инициализации
+        ================================================================================
         :param host: database server address e.g., localhost or an IP address
         :param user: the username used to authenticate.
         :param password: password used to authenticate.
@@ -35,22 +34,21 @@ class DatabaseManager:
     def check_sql_injection(str_for_check: str) -> str:
         """
         Проверяет строку на наличие в ней SQL-подобного кода
-        =================================================================
+        ================================================================================
         :param str_for_check: строка для проверки на SQL-синтаксис
         :return: строку, если всё хорошо; предупреждение, если плохо
-        =================================================================
+        ================================================================================
         !!! будет сделано в ближайшее никогда !!!
         """
         some_code = 'some_code' + str_for_check
         return some_code
 
     @staticmethod
-    def convert_pytype_to_sqltype(non_converted_type: str) -> str:
+    def convert_pytype_to_sqltype(unconverted_type_string: str) -> str:
         """
-        Превращает типы в пригодные для SQL, если они были указаны
-        неверно
-        =================================================================
-        :param non_converted_type: строка с названием типа в python
+        Превращает типы в пригодные для SQL, если они были указаны неверно
+        ================================================================================
+        :param unconverted_type_string: строка с названием типа в python
         :return: строка с типом, пригодным для SQL
         """
         converted_type = ''
@@ -58,28 +56,28 @@ class DatabaseManager:
                       'float':  'REAL',   'bytes': 'BYTEA', 'bool': 'BOOLEAN',
                       'list': 'TEXT'}
 
-        if non_converted_type.split()[0].upper() in types_dict.values():
-            converted_type += non_converted_type.split()[0].upper()
+        if unconverted_type_string.split()[0].upper() in types_dict.values():
+            converted_type += unconverted_type_string.split()[0].upper()
         else:
-            converted_type += types_dict[non_converted_type.split()[0]]
+            converted_type += types_dict[unconverted_type_string.split()[0]]
 
-        if 'primary' in non_converted_type.lower():
+        if 'primary' in unconverted_type_string.lower():
             converted_type += ' PRIMARY KEY'
 
-        if 'default' in non_converted_type.lower():
-            converted_type += " DEFAULT " + ' '.join(non_converted_type.split()[2:])
+        if 'default' in unconverted_type_string.lower():
+            converted_type += " DEFAULT " + ' '.join(unconverted_type_string.split()[2:])
 
         return converted_type
 
-    def convert_dict_to_string(self, non_converted_dict: dict, separator=' ') -> str:
+    def convert_dict_to_string(self, unconverted_dict: dict, separator=' ') -> str:
         """
         Превращает словарь в строку, которую можно использовать
         для конкатенации в SQL-запросах
-        =================================================================
-        :param non_converted_dict: словарь со значениями
+        ================================================================================
+        :param unconverted_dict: словарь со значениями
         :param separator: разделитель, стоящий между бывших словарных пар
         :return: строку, преобразованную по образцу
-        =================================================================
+        ================================================================================
         Пример:
         было:  {'user_id': *значение1*, 'score': *значение2*}
         стало: 'user_id = *значение1*, score = *значение2*'
@@ -87,8 +85,8 @@ class DatabaseManager:
         """
         converted_string = ''
         count = 0
-        dict_len = non_converted_dict.__len__()
-        for item in non_converted_dict.items():
+        dict_len = unconverted_dict.__len__()
+        for item in unconverted_dict.items():
             count += 1
             comma = ', ' if count < dict_len else ''
             if len(item) > 1:  # строку с пробелами необходимо обраймлять в ' ', не строку - не надо
@@ -103,9 +101,8 @@ class DatabaseManager:
     @staticmethod
     def convert_digits_to_string(iterable_obj) -> list:
         """
-        Превращает все элементы итерируемого объекта в строки
-        и возвращает как лист; безусловно
-        =================================================================
+        Превращает все элементы итерируемого объекта в строки и возвращает как лист.
+        ================================================================================
         :param iterable_obj: получаем на вход итерируемый объект
         :return: возвращаем список, где все элементы приняли тип str
         """
@@ -114,11 +111,11 @@ class DatabaseManager:
     @staticmethod
     def add_dicts(*dicts) -> dict:
         """
-        Складывает словари с одинаковыми ключами, возвращает словарь
-        с результатами сложения и теми же ключами
-        =================================================================
-        :param dicts: любое количество словарей
-        :return: результат их сложения типа dict
+        Складывает словари с одинаковыми ключами путём сложенния их значений, 
+        возвращает словарь с результатами сложения и теми же ключами
+        ================================================================================
+        :param dicts: любое количество словарей, поданных позиционно
+        :return: один словарь, результат их сложения типа dict
         """
         from collections import Counter  # Counter из collections - вид словаря, который позволяет нам считать
         result_dict = Counter()          # количество неизменяемых объектов (в большинстве случаев, строк)
@@ -131,7 +128,7 @@ class DatabaseManager:
         """
         Оборачиваем строки в дополнительные скобки для адекватной
         подстановки в exec/eval или куда-либо ещё
-        =================================================================
+        ================================================================================
         :param string: изначальная строка
         :param braces_type: необходимый тип скобок для обёртки
         :return: строку, где строковые элементы дополнительно обёрнуты
@@ -152,7 +149,7 @@ class DatabaseManager:
         """
         Специфическая функция. Позволяет искать некую подстроку в
         записях, взятых из базы данных
-        =================================================================
+        ================================================================================
         :param input_obj: объект вида [(), ()]. Вложенность не глубже
         двух уровней и НЕ МЕНЬШЕ двух уровней. Подстроено под
         стандартный возврат из базы данных методом SELECT
@@ -170,43 +167,41 @@ class DatabaseManager:
     def convert_strange_str_to_list(string: str, separator: str) -> list:
         """
         Специфическая функция. Конвертирует странную строку в лист.
-        =================================================================
+        ================================================================================
         :param string: строка вида '[entry1#&% запись2 #&% "3"]'
         :param separator: разделитель, по которому список будет образован
         :return: список
         """
         return string[1:len(string)-1].split(separator)
 
-    def create_table(self, table_name: str, columns: dict):
+    def create_table(self, table_name: str, columns_dict: dict):
         """
         Создаём таблицу, если такой ещё нет.
-        =================================================================
+        ================================================================================
         :param table_name: название создаваемой таблицы; Английский
-        :param columns: словарь, содержащий название столбца
-        и его тип. Пример: {'score': 'int', 'username':'text'}
-        value может содержать указатель primary, тогда при
-        конвертации к ключу будет добавлено ключевое слово
-        PRIMARY KEY для однозначной идентификации
-        =================================================================
+        :param columns_dict: словарь, содержащий название столбца и его тип.
+        Пример: {'score': 'int', 'username':'text'}
+        value может содержать указатель primary, тогда при конвертации к ключу будет
+        добавлено ключевое слово PRIMARY KEY для однозначной идентификации
+        ================================================================================
         Запрос имеет SQL-синтаксис вида
         CREATE TABLE IF NOT EXISTS *название_таблицы*
         (user_id = *значение1*, score = *значение2*)
         """
-        columns = {key: self.convert_pytype_to_sqltype(value) for key, value in columns.items()}
+        columns_dict = {key: self.convert_pytype_to_sqltype(value) for key, value in columns_dict.items()}
         try:
             with self.connection.cursor() as cursor:
                 cursor.execute(
                     'CREATE TABLE IF NOT EXISTS {0}({1})'
-                    .format(table_name, self.convert_dict_to_string(columns))
+                    .format(table_name, self.convert_dict_to_string(columns_dict))
                     )
         except Exception as exc:
             print('Дата: {0}\nОШИБКА:{1}'.format(time.strftime("%d.%m.%Y - %H.%M.%S", time.localtime()), exc))
 
     def add_entries(self, table_name: str, values_dict: dict):
         """
-        Создаём следующий по порядку столбец с указанными в value_dict
-        данными
-        =================================================================
+        Создаём следующий по порядку столбец с указанными в value_dict данными
+        ================================================================================
         :param table_name: название таблицы, в которую вставляем
         :param values_dict: словарь, содержащий название столбца
         и начальные данные.
@@ -229,7 +224,7 @@ class DatabaseManager:
         """
         Позволяет получить 1(одну) запись, исходя из введённых параметров
         и/или user_id
-        =================================================================
+        ================================================================================
         :param table_name: название таблицы с нужными значениями
         :param required_values: список строковых значений названий
         необходимый для извлечения столбцов
@@ -238,7 +233,7 @@ class DatabaseManager:
         :return: возвращает result - list of tuples со значениями
         из базы данных, расположенными по порядку, вида:
         [('1', 'Name', '0'), ('2', 'Dima', '228')]
-        =================================================================
+        ================================================================================
         !NOTE
         user_id спорный параметр т.к. является частным случаем,
         возможна переделка под нормальный специфический поиск
@@ -269,13 +264,13 @@ class DatabaseManager:
         """
         Возвращает все записи при специфическом user_id
         БЕЗ СПЕЦИФИКАЦИИ ОТДАСТ ВСЮ ТАБЛИЦУ, ОСТОРОЖНО!
-        =================================================================
+        ================================================================================
         :param table_name: название таблицы
-        :param user_id: опционально; если необходимы все
-        записи по конкретному пользователю
+        :param user_id: опционально; если необходимы все записи
+        по конкретному пользователю
         :return: возвращает result -  list кортежей со значениями
         из базы данных, расположенными по порядку
-        =================================================================
+        ================================================================================
         !NOTE
         user_id спорный частный параметр, лучше специфицировать
         условия иначе через WHERE
@@ -302,13 +297,13 @@ class DatabaseManager:
                        update_type='rewrite', separator='|'):
         """
         Обновляет запись одним из возможных способов
-        =================================================================
+        ================================================================================
         :param table_name: название таблицы, в которой обновляем
         :param user_id: порядковый ID человека в БД
         :param values_dict: Словарь значений следующего вида:
         {'название поля': 'новое значение'}
-        :param update_type: Применяемый тип обновления записи;
-        применяется для всех переданных в values_dict значений.
+        :param update_type: Применяемый тип обновления записи; применяется для всех
+        переданных в values_dict значений.
         > rewrite - DEFAULT - заменить старое значение в ячейке на новое
         > add - прибавить новое значение к старому (для числовых данных)
         > concat - соединить существующую строку с новой,
@@ -348,7 +343,7 @@ class DatabaseManager:
     def delete_entry(self, table_name: str, columns_dict: dict):
         """
         Удалить 1(одну) запись.
-        =================================================================
+        ================================================================================
         :param table_name: название таблицы
         :param columns_dict: словарь с парой столбец : запись из удаляемая строка,
         то есть удалена будет строка, в стобце которой есть такая запись
@@ -364,10 +359,10 @@ class DatabaseManager:
             self.connection.rollback()
             print('Дата: {0}\nОШИБКА:{1}'.format(time.strftime("%d.%m.%Y - %H.%M.%S", time.localtime()), exc))
 
-    def drop_table(self, table_name):
+    def drop_table(self, table_name: str):
         """
         Функция УДАЛЯЕТ таблицу. Вообще. Полностью
-        =================================================================
+        ================================================================================
         :param table_name: название УДАЛЯЕМОЙ таблицы
         """
         try:
@@ -377,14 +372,33 @@ class DatabaseManager:
         except Exception as exc:
             self.connection.rollback()
             print('Дата: {0}\nОШИБКА:{1}'.format(time.strftime("%d.%m.%Y - %H.%M.%S", time.localtime()), exc))
+        else:
+            print('Операция очистки таблицы завершена, информация помечена как пригодная для перезаписи.')
+
+    def execute_any_query(self, query: str):
+        """
+        Позволяет запустить любой запрос.
+        ~~~ ! Расширить функционал ! ~~~
+        ================================================================================
+        :param query: строка, содержащая полный запрос
+        ================================================================================
+        !НИ В КОЕМ СЛУЧАЕ НЕ ПОДАВАТЬ СТРОКУ, КОТОРАЯ МОЖЕТ СОДЕРЖАТЬ ДАННЫЕ,
+        ВВЕДЁННЫЕ ПОЛЬЗОВАТЕЛЕМ!
+        """
+        try:
+            with self.connection.cursor() as cursor:
+                cursor.execute(query)
+        except Exception as exc:
+            self.connection.rollback()
+            print('Дата: {0}\nОШИБКА:{1}'.format(time.strftime("%d.%m.%Y - %H.%M.%S", time.localtime()), exc))
 
 
-def basic_functionality_test():
+def basic_functionality_test(host, user, password, dbname, port='5432'):
     print('================================================================================'
           '\nTest has been started.\n'
           '================================================================================')
-    db_obj = DatabaseManager(host='localhost', user='shagonru', password='13082000',
-                             port='5432', dbname='programmer_simulator')
+    db_obj = DatabaseManager(host=host, user=user, password=password,
+                             port=port, dbname=dbname)
     db_obj.create_table('users',
                         {'user_id': 'serial primary',
                          'StringTest': "str DEFAULT 'дефолт string'", 'IntTest': 'int DEFAULT 0',
@@ -416,8 +430,16 @@ def basic_functionality_test():
 def main():
     # answer = input('Запустить тест базового функционала?\n')
     # if answer.lower() in ['да', 'запуск', 'запустить', '1']:
-    #     basic_functionality_test()
-    basic_functionality_test()
+    #     host, user, password, dbname =
+    #     input('Введите host, имя, пароль и название БД, разделяя их пробелами\n').split()
+    #     basic_functionality_test(host, user, password, dbname)
+    user_data_sosha = dict(host='localhost', user='shagonru', password='13082000',
+                           dbname='programmer_simulator', port='5432')
+    
+    # user_data_dima = dict(host='localhost', user='', password='',
+    #                        dbname='programmer_simulator', port='5432')
+    
+    basic_functionality_test(*user_data_sosha.values())
 
 
 if __name__ == '__main__':
