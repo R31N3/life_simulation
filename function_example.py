@@ -13,7 +13,7 @@ def read_data():
         return data
 
 def read_answers_data():
-    with open("answers_dict_example.json", encoding="utf-8") as file:
+    with open("data/answers_dict_example.json", encoding="utf-8") as file:
         data = json.loads(file.read())
         return data
 

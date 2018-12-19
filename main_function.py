@@ -67,10 +67,12 @@ def handle_dialog(request, response, user_storage, database):
     global Named, handler
     # request.command - сообщение от пользователя
     # !! handler = "ну вот тут ты забираешь хэндлер из бд, ага"
+
     input_message = request.command.lower().strip("?!.")
     # первый запуск/перезапуск диалога
+    user_id = int("".join([str(ord(i)) for i in request.user_id]))
     if request.is_new_session or "name" not in user_storage.keys():
-        if request.is_new_session and not database.get_entry(request.user_id):
+        if request.is_new_session and not database.get_entry("users", user_id):
             output_message = "Приветствую, немеханический. Не получается стать программистом? " \
                       "Есть вопросы о нашей нелёгкой жизни? Запускай симулятор! " \
                       "#для продолжения необходимо пройти авторизацию, введите имя пользователя..."
@@ -81,9 +83,10 @@ def handle_dialog(request, response, user_storage, database):
         if handler == "asking name":
             Named = True
             user_storage["name"] = request.command
-            database.add_entries('users',
-                       {'FloatTest': 3.14, 'BoolTest': True
-                        })
+            database.create_table("users_info",{'user_id': "serial primary", "request_id": request.user_id,})
+            output_message = database.get_all_entries("users_info", {'request_id': request.user_id})
+            buttons, user_storage = get_suggests(user_storage)
+            return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, True)
 
         user_storage['suggests']= [
             "Основная информация",
@@ -264,10 +267,8 @@ def handle_dialog(request, response, user_storage, database):
                         product_weight = food_list[i][1]
 
                 if product:
-                    # !! Дальше мы проверяем, можем ли мы купить этот продукт,
-                    # поэтому пока что тут просто будет очередной флажок
-                    flag = True
-                    if flag == True:
+                    money = 1488
+                    if money - product_price:
                         output_message = "Метод {} успешно оплачен. \n Список доступных методов восстановления здоровья: {}"\
                             .format(product, ",\n".join(user_storage['suggests'][:-1])+ "\n Доступные команды: Назад")
                     else:
@@ -566,7 +567,7 @@ def handle_dialog(request, response, user_storage, database):
                         else:
                             output_message = "У вас недостаточно денег для внесения, нехватает {}р. Доступные команды: Назад".format(int(input_message)-money)
 
-                    except Exception:
+                    except TypeError:
                         output_message = "{} не является численным значением, введите сумму повторно. Доступные команды: Назад".format(input_message)
 
                     buttons, user_storage = get_suggests(user_storage)
@@ -620,7 +621,7 @@ def handle_dialog(request, response, user_storage, database):
                         else:
                             output_message = credit+" Доступные команды: Назад"
 
-                    except Exception:
+                    except TypeError:
                         output_message = "{} не является численным значением, введите сумму повторно. Доступные команды: Назад".format(
                             input_message)
 
@@ -715,6 +716,7 @@ def handle_dialog(request, response, user_storage, database):
         if handler == "education_page":
             expirience = "сюда вставить опыт игрока"
             lvl = "сюда вставить уровень игрока"
+
 
 
     if input_message in ['нет', 'не хочется', 'в следующий раз', 'выход', "не хочу", 'выйти']:
