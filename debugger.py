@@ -1,5 +1,29 @@
 from main_function import *
-import database_module
+
+def init_database(host, user, password, dbname):
+    """
+    =================================================================
+    Значения по умолчанию подавать по следующему шаблону:
+    'column_name': "type DEFAULT value", где value в зависомости от
+    типа ДОЛЖНО принимать следующие значения:
+    INTEGER -> 0; REAL -> 0.00; TEXT -> 'text here'; BOOLEAN -> True;
+    list -> '[entry1#&% запись2 #&% "3"]' - ТОЛЬКО ТАК на вход
+    И угадывайте как хотите, лист чего нам пришёл, туплей или нет,
+    тех или не тех. УДОБНО, ДА? Как просили, так и сделали.
+    =================================================================
+    """
+    psdb = postgresql_database.DatabaseManager(host, user, password, dbname)
+    psdb.create_table("users_info",
+                      {'user_id': "serial primary", "request_id": "str NOT NULL UNIQUE", "handler": "str DEFAULT 'null'",
+                       "Named": "bool DEFAULT False", "Experience": "int DEFAULT 0",
+                       "Money": "int DEFAULT 1000", "Food": "int DEFAULT 100", "Exp": "int DEFAULT 0",
+                       "Lvl": "str DEFAULT '0'", "Job": "str DEFAULT '0'",
+                       "Freelance": "list DEFAULT '[zp#&%time#&%exp]'",
+                       "credit" : "list DEFAULT '[index#&%money#&%time]'", "deposit" : "int DEFAULT 0",
+                       "Mood": "int DEFAULT 100", "Health": "int DEFAULT 100", "Money_Waste": "int DEFAULT 0",
+                       "Food_Waste": "int DEFAULT 20", "Mood_Waste": "int DEFAULT 20" })
+    return psdb
+
 
 
 class DeRequest:
@@ -40,7 +64,8 @@ def main():
     print("DE: Введите ID пользователя")
     id = input()
     stResponce = DeResponse()
-    database = database_module.DatabaseManager()
+    database = init_database(host='localhost', user='postgres', password='1488',
+                           dbname='programmer_simulator')
     responce, userStorage = handle_dialog(DeRequest(True, id), stResponce, {}, database)
     printResponce(responce)
     while True:
