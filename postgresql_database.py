@@ -195,14 +195,14 @@ class DatabaseManager:
         (user_id = *значение1*, score = *значение2*)
         """
         columns_dict = {key: self.convert_pytype_to_sqltype(value) for key, value in columns_dict.items()}
-        try:
-            with self.connection.cursor() as cursor:
-                cursor.execute(
-                    'CREATE TABLE IF NOT EXISTS {0}({1})'
-                    .format(table_name, self.convert_dict_to_string(columns_dict))
-                    )
-        except Exception as exc:
-            print('Дата: {0}\nОШИБКА:{1}'.format(time.strftime("%d.%m.%Y - %H.%M.%S", time.localtime()), exc))
+        # try:
+        with self.connection.cursor() as cursor:
+            cursor.execute(
+                'CREATE TABLE IF NOT EXISTS {0}({1})'
+                .format(table_name, self.convert_dict_to_string(columns_dict))
+                )
+        # except Exception as exc:
+        #     print('Дата: {0}\nОШИБКА:{1}'.format(time.strftime("%d.%m.%Y - %H.%M.%S", time.localtime()), exc))
 
     def add_entries(self, table_name: str, values_dict: dict):
         """
@@ -226,7 +226,7 @@ class DatabaseManager:
             self.connection.rollback()
             print('Дата: {0}\nОШИБКА:{1}'.format(time.strftime("%d.%m.%Y - %H.%M.%S", time.localtime()), exc))
 
-    def get_entry(self, table_name: str, required_values: list, where_condition: dict):
+    def get_entry(self, table_name: str, required_values: list, where_condition=None):
         """
         Позволяет получить 1(одну) запись, исходя из введённых параметров
         и/или условий WHERE
@@ -244,24 +244,24 @@ class DatabaseManager:
         """
         cursor = self.connection.cursor()
         result = ''
-        try:
-            query = 'SELECT {0} FROM {1}'\
-                .format(', '.join(required_values), table_name)
-            query += ' WHERE ' + self.convert_dict_to_string(where_condition, '=') if where_condition else ''
+        # try:
+        query = 'SELECT {0} FROM {1}'\
+            .format(', '.join(required_values), table_name)
+        query += ' WHERE ' + self.convert_dict_to_string(where_condition, '=') if where_condition else ''
 
-            cursor.execute(query)
-        except Exception as exc:
-            cursor.close()
-            self.connection.rollback()
-            print('Дата: {0}\nОШИБКА:{1}'.format(time.strftime("%d.%m.%Y - %H.%M.%S", time.localtime()), exc))
-        else:
-            result = cursor.fetchall()
-            cursor.close()
+        cursor.execute(query)
+        # except Exception as exc:
+        #     cursor.close()
+        #     self.connection.rollback()
+        #     print('Дата: {0}\nОШИБКА:{1}'.format(time.strftime("%d.%m.%Y - %H.%M.%S", time.localtime()), exc))
+        # else:
+        result = cursor.fetchall()
+        cursor.close()
         return result \
             if not self.check_for_hidden_list_sequence(result) \
             else self.convert_strange_str_to_list(result, '#&%')
 
-    def get_all_entries(self, table_name: str, where_condition : dict):
+    def get_all_entries(self, table_name: str, where_condition=None):
         """
         Возвращает все записи при специфическом user_id
         БЕЗ СПЕЦИФИКАЦИИ ОТДАСТ ВСЮ ТАБЛИЦУ, ОСТОРОЖНО!
@@ -314,7 +314,8 @@ class DatabaseManager:
         """
         try:
             with self.connection.cursor() as cursor:
-                exist_entry = self.get_entry(table_name, list(values_dict.keys()), user_id=user_id)
+                exist_entry = self.get_entry(table_name, list(values_dict.keys()),
+                                             where_condition={'request_id': user_id})
                 if not exist_entry:
                     raise psycopg2.DataError('Запись не существует.')
                 else:
@@ -414,7 +415,7 @@ def basic_functionality_test(host, user, password, dbname, port='5432'):
                         })
     print(db_obj.get_entry('users', ['StringTest', 'IntTest']))
     print(db_obj.get_all_entries('users'))
-    print(db_obj.get_all_entries('users', user_id='2'))
+    print(db_obj.get_all_entries('users'))
     db_obj.update_entries('users', '2', {'IntTest': 228282}, update_type='rewrite')
     db_obj.update_entries('users', '2', {'FloatTest': 12.21}, update_type='add')
     db_obj.update_entries('users', '2', {'StringTest': 'concat this'}, update_type='concat')
