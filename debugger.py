@@ -1,5 +1,9 @@
 from main_function import *
+<<<<<<< HEAD
 import postgresql_database
+=======
+
+>>>>>>> f8348a1... Special for GeyOrgy(debug please)
 def init_database(host, user, password, dbname):
     """
     =================================================================
@@ -15,6 +19,7 @@ def init_database(host, user, password, dbname):
     psdb = postgresql_database.DatabaseManager(host, user, password, dbname)
     psdb.create_table("users_info",
                       {'user_id': "serial primary", "request_id": "str NOT NULL UNIQUE", "handler": "str DEFAULT 'null'",
+<<<<<<< HEAD
                        "Name": "str DEFAULT 'null'", "Named": "bool DEFAULT False", "Experience": "int DEFAULT 0",
                        "Money": "int DEFAULT 1000", "Food": "int DEFAULT 70", "Exp": "int DEFAULT 0",
                        "Lvl": "str DEFAULT '1'", "Job": "str DEFAULT 'Безработный#$0#$0#$1'",
@@ -26,6 +31,15 @@ def init_database(host, user, password, dbname):
                        "Is_Dead": "bool DEFAULT False", "current_education": "str DEFAULT 'null'",
                        "education": "str DEFAULT 'null'", "current_course": "str DEFAULT 'null'",
                        "course": "str DEFAULT 'null'"})
+=======
+                       "Named": "bool DEFAULT False", "Experience": "int DEFAULT 0",
+                       "Money": "int DEFAULT 1000", "Food": "int DEFAULT 100", "Exp": "int DEFAULT 0",
+                       "Lvl": "str DEFAULT '0'", "Job": "str DEFAULT '0'",
+                       "Freelance": "list DEFAULT '[zp#&%time#&%exp]'",
+                       "credit" : "list DEFAULT '[index#&%money#&%time]'", "deposit" : "int DEFAULT 0",
+                       "Mood": "int DEFAULT 100", "Health": "int DEFAULT 100", "Money_Waste": "int DEFAULT 0",
+                       "Food_Waste": "int DEFAULT 20", "Mood_Waste": "int DEFAULT 20" })
+>>>>>>> f8348a1... Special for GeyOrgy(debug please)
     return psdb
 
 
@@ -69,7 +83,11 @@ def main():
     id = input()
     stResponce = DeResponse()
     database = init_database(host='localhost', user='postgres', password='1488',
+<<<<<<< HEAD
                              dbname='programmer_simulator')
+=======
+                           dbname='programmer_simulator')
+>>>>>>> f8348a1... Special for GeyOrgy(debug please)
     responce, userStorage = handle_dialog(DeRequest(True, id), stResponce, {}, database)
     printResponce(responce)
     while True:

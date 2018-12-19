@@ -68,7 +68,12 @@ def НуПридумаемНазваниеПотом(response, user_storage, м�
 
 def handle_dialog(request, response, user_storage, database):
     # request.command - сообщение от пользователя
+<<<<<<< HEAD
     warning_message = ""
+=======
+    # !! handler = "ну вот тут ты забираешь хэндлер из бд, ага"
+
+>>>>>>> f8348a1... Special for GeyOrgy(debug please)
     input_message = request.command.lower().strip("?!.")
     if database.get_entry("users_info",  ['handler'], {'request_id': request.user_id}) != [] and \
             database.get_entry("users_info", ['handler'], {'request_id': request.user_id})[0][0].startswith('is_dead'):
@@ -102,10 +107,16 @@ def handle_dialog(request, response, user_storage, database):
                                             True)
 
     # первый запуск/перезапуск диалога
+<<<<<<< HEAD
     if request.is_new_session or not database.get_entry("users_info",  ['Named'], {'request_id': request.user_id})[0][0]:
         if request.is_new_session and (database.get_entry("users_info", ['Name'],
                                                           {'request_id': request.user_id}) == 'null'
                                        or not database.get_entry("users_info", ['Name'], {'request_id': request.user_id})):
+=======
+    user_id = int("".join([str(ord(i)) for i in request.user_id]))
+    if request.is_new_session or "name" not in user_storage.keys():
+        if request.is_new_session and not database.get_entry("users", user_id):
+>>>>>>> f8348a1... Special for GeyOrgy(debug please)
             output_message = "Приветствую, немеханический. Не получается стать программистом? " \
                       "Есть вопросы о нашей нелёгкой жизни? Запускай симулятор! " \
                       "#для продолжения необходимо пройти авторизацию, введите имя пользователя..."
@@ -119,7 +130,14 @@ def handle_dialog(request, response, user_storage, database):
         if handler == "asking name":
             database.update_entries('users_info', request.user_id, {'Named': True}, update_type='rewrite')
             user_storage["name"] = request.command
+<<<<<<< HEAD
             database.update_entries('users_info', request.user_id, {'Name': input_message}, update_type='rewrite')
+=======
+            database.create_table("users_info",{'user_id': "serial primary", "request_id": request.user_id,})
+            output_message = database.get_all_entries("users_info", {'request_id': request.user_id})
+            buttons, user_storage = get_suggests(user_storage)
+            return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, True)
+>>>>>>> f8348a1... Special for GeyOrgy(debug please)
 
         user_storage['suggests'] = [
             "Основная информация",
@@ -398,6 +416,7 @@ def handle_dialog(request, response, user_storage, database):
             # start_page -> start_next -> food_recharge -> health_next
             if handler.endswith("next"):
                 product = ""
+<<<<<<< HEAD
                 product_price = 0
                 product_weight = 0
                 health = database.get_entry("users_info", ['Health'], {'request_id': request.user_id})[0][0]
@@ -427,6 +446,20 @@ def handle_dialog(request, response, user_storage, database):
                                              "Ваши финансы: {} \nСписок доступных методов восстановления здоровья:\n{}"\
                                 .format(product, product_price - money, health, money,
                                         ",\n".join(user_storage['suggests'][:-1]) + "\n Доступные команды: Назад, Следующий день")
+=======
+                food_list = read_answers_data("data/start_page_list")["health"][index]
+                for i in food_list.keys():
+                    if i.lower().startswith(input_message):
+                        product = i
+                        product_price = food_list[i][0]
+                        product_weight = food_list[i][1]
+
+                if product:
+                    money = 1488
+                    if money - product_price:
+                        output_message = "Метод {} успешно оплачен. \n Список доступных методов восстановления здоровья: {}"\
+                            .format(product, ",\n".join(user_storage['suggests'][:-1])+ "\n Доступные команды: Назад")
+>>>>>>> f8348a1... Special for GeyOrgy(debug please)
                     else:
                         output_message = "Метод {} не найден, повторите запрос. \n Ваше здоровье: {} \n Список доступных методов восстановления здоровья:" \
                                          " \n {}".format(input_message, health, ",\n".join(user_storage['suggests'][:-1])
@@ -800,9 +833,16 @@ def handle_dialog(request, response, user_storage, database):
                                 deposit[0], money-int(input_message)
                             )
                         else:
+<<<<<<< HEAD
                             output_message = "У вас недостаточно денег для внесения, нехватает {}р. Доступные команды: Назад, Следующий день".format(int(input_message)-money)
                     except TypeError:
                         output_message = "{} не является численным значением, введите сумму повторно. Доступные команды: Назад, Следующий день".format(input_message)
+=======
+                            output_message = "У вас недостаточно денег для внесения, нехватает {}р. Доступные команды: Назад".format(int(input_message)-money)
+
+                    except TypeError:
+                        output_message = "{} не является численным значением, введите сумму повторно. Доступные команды: Назад".format(input_message)
+>>>>>>> f8348a1... Special for GeyOrgy(debug please)
 
                     buttons, user_storage = get_suggests(user_storage)
                     return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request, handler, warning_message)
@@ -864,9 +904,16 @@ def handle_dialog(request, response, user_storage, database):
                                 output_message = "У вас недостаточно денег для погашения, не хватает {}р. Доступные команды: Назад, Следующий день".format(
                                     int(input_message) - money)
                         else:
+<<<<<<< HEAD
                             output_message = credit+" Доступные команды: Назад, Следующий день"
                     except TypeError:
                         output_message = "{} не является численным значением, введите сумму повторно. Доступные команды: Назад, Следующий день".format(
+=======
+                            output_message = credit+" Доступные команды: Назад"
+
+                    except TypeError:
+                        output_message = "{} не является численным значением, введите сумму повторно. Доступные команды: Назад".format(
+>>>>>>> f8348a1... Special for GeyOrgy(debug please)
                             input_message)
 
                     buttons, user_storage = get_suggests(user_storage)
@@ -1377,6 +1424,7 @@ def handle_dialog(request, response, user_storage, database):
                                             handler)
 
     update_handler(handler, database, request)
+
 
     if input_message in ['нет', 'не хочется', 'в следующий раз', 'выход', "не хочу", 'выйти']:
         choice = random.choice(aliceAnswers["quitTextVariations"])
