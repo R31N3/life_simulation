@@ -67,6 +67,12 @@ class DatabaseManager:
         if 'default' in unconverted_type_string.lower():
             converted_type += " DEFAULT " + ' '.join(unconverted_type_string.split()[2:])
 
+        if 'not null' in unconverted_type_string.lower():
+            converted_type += ' NOT NULL'
+
+        if 'unique' in unconverted_type_string.lower():
+            converted_type += ' UNIQUE'
+
         return converted_type
 
     def convert_dict_to_string(self, unconverted_dict: dict, separator=' ') -> str:
@@ -220,33 +226,28 @@ class DatabaseManager:
             self.connection.rollback()
             print('Дата: {0}\nОШИБКА:{1}'.format(time.strftime("%d.%m.%Y - %H.%M.%S", time.localtime()), exc))
 
-    def get_entry(self, table_name: str, required_values: list, user_id=''):
+    def get_entry(self, table_name: str, required_values: list, where_condition: dict):
         """
         Позволяет получить 1(одну) запись, исходя из введённых параметров
-        и/или user_id
+        и/или условий WHERE
         ================================================================================
         :param table_name: название таблицы с нужными значениями
         :param required_values: список строковых значений названий
         необходимый для извлечения столбцов
-        :param user_id: опционально, если требуется выборка
-        по конкретному пользователю
+        :param where_condition: опционально, если требуется выборка
+        по конкретным параметрам
         :return: возвращает result - list of tuples со значениями
         из базы данных, расположенными по порядку, вида:
         [('1', 'Name', '0'), ('2', 'Dima', '228')]
         ================================================================================
-        !NOTE
-        user_id спорный параметр т.к. является частным случаем,
-        возможна переделка под нормальный специфический поиск
-        для любых других категорий для большей гибкости;
-        тогда необходимо указать переменную where и уже в ней
-        хранить строку необходимых условий поиска
+
         """
         cursor = self.connection.cursor()
         result = ''
         try:
             query = 'SELECT {0} FROM {1}'\
                 .format(', '.join(required_values), table_name)
-            query += ' WHERE user_id=' + user_id if user_id else ''
+            query += ' WHERE ' + self.convert_dict_to_string(where_condition, '=') if where_condition else ''
 
             cursor.execute(query)
         except Exception as exc:
@@ -260,14 +261,14 @@ class DatabaseManager:
             if not self.check_for_hidden_list_sequence(result) \
             else self.convert_strange_str_to_list(result, '#&%')
 
-    def get_all_entries(self, table_name: str, user_id=''):
+    def get_all_entries(self, table_name: str, where_condition : dict):
         """
         Возвращает все записи при специфическом user_id
         БЕЗ СПЕЦИФИКАЦИИ ОТДАСТ ВСЮ ТАБЛИЦУ, ОСТОРОЖНО!
         ================================================================================
         :param table_name: название таблицы
-        :param user_id: опционально; если необходимы все записи
-        по конкретному пользователю
+        :param where_condition: опционально; если необходимы все записи
+        по конкретноым условиям
         :return: возвращает result -  list кортежей со значениями
         из базы данных, расположенными по порядку
         ================================================================================
@@ -279,7 +280,7 @@ class DatabaseManager:
         result = ''
         try:
             query = 'SELECT * FROM ' + table_name
-            query += ' WHERE user_id=' + user_id if user_id else ''
+            query += ' WHERE ' + self.convert_dict_to_string(where_condition, '=') if where_condition else ''
 
             cursor.execute(query)
         except Exception as exc:

@@ -41,10 +41,12 @@ def init_database(host, user, password, dbname):
     """
     psdb = postgresql_database.DatabaseManager(host, user, password, dbname)
     psdb.create_table("users_info",
-                      {'user_id': "str primary", "handler": "string DEFAULT ''", "Named": "bool DEFAULT False", "Experience": "int DEFAULT 0",
-                       "Money": "int DEFAULT 1000", "Food": "int DEFAULT 100", "Exp" : "int DEFAULT 0", "Lvl" : "str DEFAULT '0'",
-                       "Job" : "str DEFAULT '0'",  "Freelance" : "list DEFAULT '[zp#&%time#&%exp]'", "credit" : "list DEFAULT '[index#&%money#&%time]'",
-                       "deposit" : "int DEFAULT 0",
+                      {'user_id': "serial primary", "request_id": "str NOT NULL UNIQUE", "handler": "string DEFAULT ''",
+                       "Named": "bool DEFAULT False", "Experience": "int DEFAULT 0",
+                       "Money": "int DEFAULT 1000", "Food": "int DEFAULT 100", "Exp": "int DEFAULT 0",
+                       "Lvl": "str DEFAULT '0'", "Job": "str DEFAULT '0'",
+                       "Freelance": "list DEFAULT '[zp#&%time#&%exp]'",
+                       "credit" : "list DEFAULT '[index#&%money#&%time]'", "deposit" : "int DEFAULT 0",
                        "Mood": "int DEFAULT 100", "Health": "int DEFAULT 100", "Money_Waste": "int DEFAULT 0",
                        "Food_Waste": "int DEFAULT 20", "Mood_Waste": "int DEFAULT 20", })
     return psdb
