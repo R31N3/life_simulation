@@ -2,7 +2,7 @@
 
 import threading
 import psycopg2
-import time
+import time, re
 
 
 class DatabaseManager:
@@ -102,6 +102,8 @@ class DatabaseManager:
                     converted_string += str(item[0]) + separator + str(item[1]) + comma
                 else:
                     converted_string += str(item[0]) + separator + self.cover_with_braces(str(item[1]), "'") + comma
+        string = converted_string
+        string = "request_id="+re.sub('[^a-zA-Z0-9-_*.]', '', string).split("request_")[1]
         return converted_string
 
     @staticmethod
@@ -148,7 +150,7 @@ class DatabaseManager:
                 result_list.append(braces_type + item + braces_type)
             else:  # в случае если не нужно обрамлять, оставляем как есть
                 result_list.append(item)
-        return ', '.join(result_list) if len(result_list) > 1 else result_list[0]
+        return (', '.join(result_list) if len(result_list) > 1 else result_list[0]).replace("\\", "")
 
     @staticmethod
     def check_for_hidden_list_sequence(input_obj, sequence='#&%') -> bool:
@@ -334,9 +336,9 @@ class DatabaseManager:
                                 for key in values_dict.keys()
                             }
 
-                    query = 'UPDATE ' + table_name + \
-                            ' SET ' + self.convert_dict_to_string(result_dict, separator=' = ') + \
-                            ' WHERE user_id = ' + user_id
+                    query = "UPDATE " + table_name + \
+                            " SET " + self.convert_dict_to_string(result_dict, separator=' = ') + \
+                            " WHERE request_id = $$" + self.cover_with_braces(user_id, "'")
                     cursor.execute(query)
         except Exception as exc:
             self.connection.rollback()
