@@ -148,7 +148,7 @@ class DatabaseManager:
                 result_list.append(braces_type + item + braces_type)
             else:  # в случае если не нужно обрамлять, оставляем как есть
                 result_list.append(item)
-        return ', '.join(result_list) if len(result_list) > 1 else result_list[0]
+        return (', '.join(result_list) if len(result_list) > 1 else result_list[0]).replace("\\", "")
 
     @staticmethod
     def check_for_hidden_list_sequence(input_obj, sequence='#&%') -> bool:
@@ -212,19 +212,19 @@ class DatabaseManager:
         :param values_dict: словарь, содержащий название столбца
         и начальные данные.
         """
-        try:
-            with self.connection.cursor() as cursor:
-                columns, values = ', '.join(list(values_dict.keys())), \
-                                  ', '.join(self.convert_digits_to_string(list(values_dict.values())))
-                parentheses = '{}, ' * (values.count(',') + 1)
-                query = " 'INSERT INTO " + table_name + "(" + columns + ") VALUES(" + parentheses + ")'.format({})"\
-                    .format(self.cover_with_braces(self.cover_with_braces(values, braces_type="'")))
-                query = eval(query.replace(', )', ')'))
+        # try:
+        with self.connection.cursor() as cursor:
+            columns, values = ', '.join(list(values_dict.keys())), \
+                              ', '.join(self.convert_digits_to_string(list(values_dict.values())))
+            parentheses = '{}, ' * (values.count(',') + 1)
+            query = " 'INSERT INTO " + table_name + "(" + columns + ") VALUES(" + parentheses + ")'.format({})"\
+                .format(self.cover_with_braces(self.cover_with_braces(values, braces_type="'")))
+            query = eval(query.replace(', )', ')'))
 
-                cursor.execute(query)
-        except Exception as exc:
-            self.connection.rollback()
-            print('Дата: {0}\nОШИБКА:{1}'.format(time.strftime("%d.%m.%Y - %H.%M.%S", time.localtime()), exc))
+            cursor.execute(query)
+        # except Exception as exc:
+        #     self.connection.rollback()
+        #     print('Дата: {0}\nОШИБКА:{1}'.format(time.strftime("%d.%m.%Y - %H.%M.%S", time.localtime()), exc))
 
     def get_entry(self, table_name: str, required_values: list, where_condition=None):
         """
@@ -247,12 +247,12 @@ class DatabaseManager:
         # try:
         query = 'SELECT {0} FROM {1}'\
             .format(', '.join(required_values), table_name)
-        query += ' WHERE ' + self.convert_dict_to_string(where_condition, '=') if where_condition else ''
+        query += " WHERE " + " AND ".join(self.convert_dict_to_string(where_condition, "=").split(", ")) \
+            if where_condition else ""
 
         cursor.execute(query)
         # except Exception as exc:
         #     cursor.close()
-        #     self.connection.rollback()
         #     print('Дата: {0}\nОШИБКА:{1}'.format(time.strftime("%d.%m.%Y - %H.%M.%S", time.localtime()), exc))
         # else:
         result = cursor.fetchall()
@@ -278,18 +278,18 @@ class DatabaseManager:
         """
         cursor = self.connection.cursor()
         result = ''
-        try:
-            query = 'SELECT * FROM ' + table_name
-            query += ' WHERE ' + self.convert_dict_to_string(where_condition, '=') if where_condition else ''
+        # try:
+        query = 'SELECT * FROM ' + table_name
+        query += " WHERE " + " AND ".join(self.convert_dict_to_string(where_condition, "=").split(", ")) \
+            if where_condition else ""
 
-            cursor.execute(query)
-        except Exception as exc:
-            cursor.close()
-            self.connection.rollback()
-            print('Дата: {0}\nОШИБКА:{1}'.format(time.strftime("%d.%m.%Y - %H.%M.%S", time.localtime()), exc))
-        else:
-            result = cursor.fetchall()
-            cursor.close()
+        cursor.execute(query)
+        # except Exception as exc:
+        #     cursor.close()
+        #     print('Дата: {0}\nОШИБКА:{1}'.format(time.strftime("%d.%m.%Y - %H.%M.%S", time.localtime()), exc))
+        # else:
+        result = cursor.fetchall()
+        cursor.close()
         return result \
             if not self.check_for_hidden_list_sequence(result) \
             else self.convert_strange_str_to_list(result, '#&%')
@@ -312,35 +312,38 @@ class DatabaseManager:
         :param separator: разделитель строк, используемый при
         обновлении типа concat
         """
-        try:
-            with self.connection.cursor() as cursor:
-                exist_entry = self.get_entry(table_name, list(values_dict.keys()),
-                                             where_condition={'request_id': user_id})
-                if not exist_entry:
-                    raise psycopg2.DataError('Запись не существует.')
-                else:
-                    if update_type == 'rewrite':
-                        result_dict = values_dict.copy()
-                    else:  # поступившим данным присваиваются ключи запрошенных
-                        exist_entry_dict = {list(values_dict.keys())[i]: exist_entry[0][i]
-                                            for i in range(len(values_dict.keys()))}
+        # try:
+        with self.connection.cursor() as cursor:
+            exist_entry = self.get_entry(table_name, list(values_dict.keys()),
+                                         where_condition={'request_id': user_id})
+            # !!! ЗАМЕНИТЬ user_id на where_condition !!!
+            if not exist_entry:
+                raise psycopg2.DataError('Запись не существует.')
+            else:
+                if update_type == 'rewrite':
+                    result_dict = values_dict.copy()
+                else:  # поступившим данным присваиваются ключи запрошенных
+                    exist_entry_dict = {list(values_dict.keys())[i]: exist_entry[0][i]
+                                        for i in range(len(values_dict.keys()))}
 
-                        if update_type == 'add':  # складываем словари с одинаковыми ключами
-                            result_dict = self.add_dicts(values_dict, exist_entry_dict)
-                        elif update_type == 'concat':
-                            # складываем существующую строку и новую, +- разделитель
-                            result_dict = {
-                                key: str(exist_entry_dict[key]) + separator + str(values_dict[key])
-                                for key in values_dict.keys()
-                            }
+                    if update_type == 'add':  # складываем словари с одинаковыми ключами
+                        result_dict = self.add_dicts(values_dict, exist_entry_dict)
+                    elif update_type == 'concat':
+                        # складываем существующую строку и новую, +- разделитель
+                        result_dict = {
+                            key: str(exist_entry_dict[key]) + separator + str(values_dict[key])
+                            for key in values_dict.keys()
+                        }
 
-                    query = 'UPDATE ' + table_name + \
-                            ' SET ' + self.convert_dict_to_string(result_dict, separator=' = ') + \
-                            ' WHERE user_id = ' + user_id
-                    cursor.execute(query)
-        except Exception as exc:
-            self.connection.rollback()
-            print('Дата: {0}\nОШИБКА:{1}'.format(time.strftime("%d.%m.%Y - %H.%M.%S", time.localtime()), exc))
+                query = 'UPDATE ' + table_name + \
+                        ' SET ' + self.convert_dict_to_string(result_dict, separator=' = ') + \
+                        ' WHERE request_id = ' + user_id
+                # !!! ЗАМЕНИТЬ user_id на
+                # " AND ".join(self.convert_dict_to_string(where_condition, "=").split(", ")) !!!
+                cursor.execute(query)
+        # except Exception as exc:
+        #     self.connection.rollback()
+        #     print('Дата: {0}\nОШИБКА:{1}'.format(time.strftime("%d.%m.%Y - %H.%M.%S", time.localtime()), exc))
 
     def delete_entry(self, table_name: str, columns_dict: dict):
         """
@@ -351,15 +354,15 @@ class DatabaseManager:
         то есть удалена будет строка, в стобце которой есть такая запись
         :return:
         """
-        try:
-            with self.connection.cursor() as cursor:
-                query = 'DELETE FROM {0} WHERE {1}'\
-                    .format(table_name, self.convert_dict_to_string(columns_dict, separator='='))
+        # try:
+        with self.connection.cursor() as cursor:
+            query = 'DELETE FROM {0} WHERE {1}'\
+                .format(table_name, self.convert_dict_to_string(columns_dict, separator='='))
 
-                cursor.execute(query)
-        except Exception as exc:
-            self.connection.rollback()
-            print('Дата: {0}\nОШИБКА:{1}'.format(time.strftime("%d.%m.%Y - %H.%M.%S", time.localtime()), exc))
+            cursor.execute(query)
+        # except Exception as exc:
+        #     self.connection.rollback()
+        #     print('Дата: {0}\nОШИБКА:{1}'.format(time.strftime("%d.%m.%Y - %H.%M.%S", time.localtime()), exc))
 
     def drop_table(self, table_name: str):
         """
@@ -367,15 +370,15 @@ class DatabaseManager:
         ================================================================================
         :param table_name: название УДАЛЯЕМОЙ таблицы
         """
-        try:
-            with self.connection.cursor() as cursor:
-                query = 'DROP TABLE ' + table_name
-                cursor.execute(query)
-        except Exception as exc:
-            self.connection.rollback()
-            print('Дата: {0}\nОШИБКА:{1}'.format(time.strftime("%d.%m.%Y - %H.%M.%S", time.localtime()), exc))
-        else:
-            print('Операция очистки таблицы завершена, информация помечена как пригодная для перезаписи.')
+        # try:
+        with self.connection.cursor() as cursor:
+            query = 'DROP TABLE ' + table_name
+            cursor.execute(query)
+        # except Exception as exc:
+        #     self.connection.rollback()
+        #     print('Дата: {0}\nОШИБКА:{1}'.format(time.strftime("%d.%m.%Y - %H.%M.%S", time.localtime()), exc))
+        # else:
+        print('Операция очистки таблицы завершена, информация помечена как пригодная для перезаписи.')
 
     def execute_any_query(self, query: str):
         """
@@ -387,12 +390,15 @@ class DatabaseManager:
         !НИ В КОЕМ СЛУЧАЕ НЕ ПОДАВАТЬ СТРОКУ, КОТОРАЯ МОЖЕТ СОДЕРЖАТЬ ДАННЫЕ,
         ВВЕДЁННЫЕ ПОЛЬЗОВАТЕЛЕМ!
         """
-        try:
-            with self.connection.cursor() as cursor:
-                cursor.execute(query)
-        except Exception as exc:
-            self.connection.rollback()
-            print('Дата: {0}\nОШИБКА:{1}'.format(time.strftime("%d.%m.%Y - %H.%M.%S", time.localtime()), exc))
+        # try:
+        with self.connection.cursor() as cursor:
+            cursor.execute(query)
+        if 'select' in query.lower():
+            result = cursor.fetchall()
+            return result
+        # except Exception as exc:
+        #     self.connection.rollback()
+        #     print('Дата: {0}\nОШИБКА:{1}'.format(time.strftime("%d.%m.%Y - %H.%M.%S", time.localtime()), exc))
 
 
 def basic_functionality_test(host, user, password, dbname, port='5432'):
