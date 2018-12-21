@@ -335,9 +335,9 @@ class DatabaseManager:
                             for key in values_dict.keys()
                         }
 
-                query = 'UPDATE ' + table_name + \
-                        ' SET ' + self.convert_dict_to_string(result_dict, separator=' = ') + \
-                        ' WHERE request_id = ' + user_id
+                query = "UPDATE " + table_name + \
+                        " SET " + self.convert_dict_to_string(result_dict, separator=" = ") + \
+                        " WHERE request_id = '" + user_id + "'"
                 # !!! ЗАМЕНИТЬ user_id на
                 # " AND ".join(self.convert_dict_to_string(where_condition, "=").split(", ")) !!!
                 cursor.execute(query)

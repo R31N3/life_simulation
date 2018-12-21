@@ -74,7 +74,7 @@ def handle_dialog(request, response, user_storage, database):
     # первый запуск/перезапуск диалога
     if request.is_new_session or not database.get_entry("users_info",  ['Named'], {'request_id': request.user_id})[0][0]:
         if request.is_new_session and (database.get_entry("users_info",  ['Name'],
-                                                          {'request_id': request.user_id})[0][0] == 'null'
+                                                          {'request_id': request.user_id}) == 'null'
                                        or not database.get_entry("users_info",  ['Name'])):
             output_message = "Приветствую, немеханический. Не получается стать программистом? " \
                       "Есть вопросы о нашей нелёгкой жизни? Запускай симулятор! " \
@@ -86,7 +86,7 @@ def handle_dialog(request, response, user_storage, database):
             handler = "asking name"
             update_handler(handler, database, request)
             return response, user_storage
-        handler = database.get_entry("users_info", ['handler'], {'request_id': request.user_id})
+        handler = database.get_entry("users_info", ['handler'], {'request_id': request.user_id})[0][0]
         print(handler)
         if handler == "asking name":
             print(request.user_id)
