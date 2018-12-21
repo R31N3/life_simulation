@@ -16,11 +16,11 @@ def init_database(host, user, password, dbname):
     psdb.create_table("users_info",
                       {'user_id': "serial primary", "request_id": "str NOT NULL UNIQUE", "handler": "str DEFAULT 'null'",
                        "Name": "str DEFAULT 'null'", "Named": "bool DEFAULT False", "Experience": "int DEFAULT 0",
-                       "Money": "int DEFAULT 1000", "Food": "int DEFAULT 100", "Exp": "int DEFAULT 0",
+                       "Money": "int DEFAULT 1000", "Food": "int DEFAULT 70", "Exp": "int DEFAULT 0",
                        "Lvl": "str DEFAULT '0'", "Job": "str DEFAULT '0'",
-                       "Freelance": "str DEFAULT 'zp#&time#&exp'",
-                       "credit" : "str DEFAULT 'index#&money#&time'", "deposit" : "int DEFAULT 0",
-                       "Mood": "int DEFAULT 100", "Health": "int DEFAULT 100", "Money_Waste": "int DEFAULT 0",
+                       "Freelance": "str DEFAULT 'zp#&time#&exp'", "Day" : "int DEFAULT 0",
+                       "Credit" : "str DEFAULT 'index#&money#&time'", "Deposit" : "str DEFAULT 'index#&money#&time'",
+                       "Mood": "int DEFAULT 70", "Health": "int DEFAULT 70", "Money_Waste": "int DEFAULT 0",
                        "Food_Waste": "int DEFAULT 20", "Mood_Waste": "int DEFAULT 20" })
     return psdb
 

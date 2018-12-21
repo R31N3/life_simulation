@@ -90,7 +90,7 @@ def handle_dialog(request, response, user_storage, database):
             user_storage["name"] = request.command
             database.update_entries('users_info', request.user_id, {'Name': input_message}, update_type='rewrite')
 
-        user_storage['suggests']= [
+        user_storage['suggests'] = [
             "Основная информация",
             "Источник дохода",
             "Образование и курсы",
@@ -156,12 +156,12 @@ def handle_dialog(request, response, user_storage, database):
             return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request, handler)
 
         if handler == "start_page":
-            money = "сюда вставить получение денег пользователя"
-            exp = "сюда вставить получение опыта пользователя"
-            food = "сюда вставить получение голода пользователя"
-            mood = "сюда вставить получение настроения пользователя"
-            health = "сюда вставить получение здоровья пользователя"
-            date = "сюда вставить получение текущей даты пользователя"
+            money = database.get_entry("users_info", ['Money'], {'request_id': request.user_id})[0][0]
+            exp = database.get_entry("users_info", ['Exp'], {'request_id': request.user_id})[0][0]
+            food = database.get_entry("users_info", ['Food'], {'request_id': request.user_id})[0][0]
+            mood = database.get_entry("users_info", ['Mood'], {'request_id': request.user_id})[0][0]
+            health = database.get_entry("users_info", ['Health'], {'request_id': request.user_id})[0][0]
+            date = database.get_entry("users_info", ['Day'], {'request_id': request.user_id})[0][0]
 
             user_storage['suggests'] = [
                 "Восполнение голода",
@@ -173,7 +173,7 @@ def handle_dialog(request, response, user_storage, database):
             handler += "->start_next"
 
             output_message = "Ваши деньги: {} \n Ваш накопленный опыт: {} \n Ваш голод: {} \n Ваше настроение: {}" \
-                             " \n Ваше здоровье: {} Текущая дата: {} \n Доступные опции: {}"\
+                             " \n Ваше здоровье: {} \n Дней с начала игры прошло: {} \n Доступные опции: {}"\
                 .format(money, exp, food, mood, health, date, ", ".join(user_storage['suggests']))
 
             buttons, user_storage = get_suggests(user_storage)
@@ -191,15 +191,14 @@ def handle_dialog(request, response, user_storage, database):
         if handler.count("food"):
             # start_page -> start_next -> food_recharge
             if handler.endswith("food_recharge"):
-                food = "сюда вставить получение голода пользователя"
-
-                index = "1"
+                food = database.get_entry("users_info", ['Food'], {'request_id': request.user_id})[0][0]
+                index = database.get_entry("users_info", ['Lvl'], {'request_id': request.user_id})[0][0]
                 food_list = read_answers_data("data/start_page_list")["food"][index]
                 user_storage['suggests'] = [i + " цена {} восполнение {}".format(food_list[i][0], food_list[i][1]) for i in
-                                            food_list.keys()]
+                                            food_list.keys()]+["Назад"]
                 handler += "->next"
 
-                output_message = "Ваш голод: {} Список продуктов: \n {}"\
+                output_message = "Ваш голод: {} \n Список продуктов: \n {}"\
                     .format(food, ",\n".join(user_storage['suggests'][:-1])
                             + "\n Доступные опции: Назад")
 
@@ -210,27 +209,41 @@ def handle_dialog(request, response, user_storage, database):
             if handler.endswith("next"):
                 # !! Необходимо добавить в БД уровень игрока, который я потом буду подсчитывать, стартовый - первый.
                 # !! Этот уровень и есть индекс, агааа.
-                index = "1"
-                product = ""
-                food_list = read_answers_data("data/start_page_list")["food"][index]
-                for i in food_list.keys():
-                    if i.lower().startswith(input_message):
-                        product = i
-                        product_price = food_list[i][0]
-                        product_weight = food_list[i][1]
+                food = database.get_entry("users_info", ['Food'], {'request_id': request.user_id})[0][0]
+                if food != 100:
+                    index = database.get_entry("users_info", ['Lvl'], {'request_id': request.user_id})[0][0]
+                    money = database.get_entry("users_info", ['Money'], {'request_id': request.user_id})[0][0]
+                    product = ""
+                    product_price = 0
+                    product_weight = 0
+                    food_list = read_answers_data("data/start_page_list")["food"][index]
+                    for i in food_list.keys():
+                        if i.lower().startswith(input_message):
+                            product = i
+                            product_price = food_list[i][0]
+                            product_weight = food_list[i][1]
 
-                if product:
-                    # !! Дальше мы проверяем, можем ли мы купить этот продукт,
-                    # поэтому пока что тут просто будет очередной флажок
-                    flag = True
-                    if flag == True:
-                        output_message = "Продукт {} успешно преобретен. \n Список продуктов: {}"\
-                            .format(product, ",\n".join(user_storage['suggests'][:-1]) + "\n Доступные команды: Назад")
+                    if product:
+                        # !! Дальше мы проверяем, можем ли мы купить этот продукт,
+                        # поэтому пока что тут просто будет очередной флажок
+                        if money - product_price >= 0:
+                            food = food + product_weight if (food + product_weight) % 100 and (food + product_weight)\
+                                                            < 100  else 100
+                            database.update_entries('users_info', request.user_id, {'Food': food},
+                                                    update_type='rewrite')
+                            database.update_entries('users_info', request.user_id, {'Money': money - product_price},
+                                                    update_type='rewrite')
+                            output_message = "Продукт {} успешно преобретен.\nВаш голод: {} \n Ваши финансы: {} \n Список продуктов: \n {}"\
+                                .format(product, food, money - product_price, ",\n".join(user_storage['suggests'][:-1]) + "\n Доступные команды: Назад")
+                        else:
+                            output_message = "Продукт {} нельзя преобрести, нехватает денег: {} \nВаш голод: {} \n Ваши финансы: {} \n Список продуктов: \n{} "\
+                                .format(product, product_price - money, food, money, ",\n".join(user_storage['suggests'][:-1]) + "\n Доступные команды: Назад")
                     else:
-                        output_message = "Продукт {} нельзя преобрести, нехватает денег. \n Список продуктов:{} "\
-                            .format(product, ",\n".join(user_storage['suggests'][:-1]) + "\n Доступные команды: Назад")
+                        output_message = "Продукт {} не найден, повторите запрос \n Ваш голод: {} \n Ваши финансы: {}".format(input_message, food, money)
                 else:
-                    output_message = "Продукт {} не найден, повторите запрос".format(input_message)
+                    output_message = "Вы не голодный. \n  Список продуктов: \n {} Доступные команды: Назад".format(
+                        ",\n".join(user_storage['suggests'][:-1])
+                    )
 
                 buttons, user_storage = get_suggests(user_storage)
                 return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request, handler)
@@ -238,12 +251,12 @@ def handle_dialog(request, response, user_storage, database):
         if handler.count("health"):
             # start_page -> start_next -> food_recharge -> health_recharge
             if handler.endswith("health_recharge"):
-                health = "сюда вставить получение здоровья пользователя"
-
-                index = "1"
-                food_list = read_answers_data("data/start_page_list")["health"][index]
+                health = database.get_entry("users_info", ['Health'], {'request_id': request.user_id})[0][0]
+                index = database.get_entry("users_info", ['Lvl'], {'request_id': request.user_id})[0][0]
+                health_list = read_answers_data("data/start_page_list")["health"][index]
                 user_storage['suggests'] = \
-                    [i + " цена {} восполнение {}".format(food_list[i][0], food_list[i][1]) for i in food_list.keys()]
+                    [i + " цена {} восполнение {}".format(health_list[i][0], health_list[i][1]) for i in
+                     health_list.keys()] + ["Назад"]
 
                 handler += "->next"
 
@@ -257,28 +270,42 @@ def handle_dialog(request, response, user_storage, database):
             if handler.endswith("next"):
                 # !! Необходимо добавить в БД уровень игрока, который я потом буду подсчитывать, стартовый - первый.
                 # !! Этот уровень и есть индекс, агааа.
-                index = "1"
                 product = ""
-                food_list = read_answers_data("data/start_page_list")["health"][index]
-                for i in food_list.keys():
-                    if i.lower().startswith(input_message):
-                        product = i
-                        product_price = food_list[i][0]
-                        product_weight = food_list[i][1]
+                product_price = 0
+                product_weight = 0
+                health = database.get_entry("users_info", ['Health'], {'request_id': request.user_id})[0][0]
+                if health != 100:
+                    index = database.get_entry("users_info", ['Lvl'], {'request_id': request.user_id})[0][0]
+                    health_list = read_answers_data("data/start_page_list")["health"][index]
+                    for i in health_list.keys():
+                        if i.lower().startswith(input_message):
+                            product = i
+                            product_price = health_list[i][0]
+                            product_weight = health_list[i][1]
 
-                if product:
-                    money = 1488
-                    if money - product_price:
-                        output_message = "Метод {} успешно оплачен. \n Список доступных методов восстановления здоровья: {}"\
-                            .format(product, ",\n".join(user_storage['suggests'][:-1])+ "\n Доступные команды: Назад")
+                    if product:
+                        money = database.get_entry("users_info", ['Money'], {'request_id': request.user_id})[0][0]
+                        if money - product_price:
+                            health = health + product_weight if (health + product_weight) % 100 and (
+                                    health + product_weight) < 100 else 100
+                            database.update_entries('users_info', request.user_id, {'Health': health},
+                                                    update_type='rewrite')
+                            database.update_entries('users_info', request.user_id, {'Money': money - product_price},
+                                                    update_type='rewrite')
+                            output_message = "Метод {} успешно оплачен. \n Ваше здоровье: {} \n Ваши финансы: {} \n Список доступных методов восстановления" \
+                                             " здоровья: {}"\
+                                .format(product, health,money - product_price, ",\n".join(user_storage['suggests'][:-1])+ "\n Доступные команды: Назад")
+                        else:
+                            output_message = "Метод {} нельзя оплатить, нехватает денег: {} \n Ваше здоровье: {} \n Ваши финансы: {} \n Список доступных методов восстановления \n" \
+                                             " здоровья: {}".format(product, product_price - money, health, money, ",\n".join(user_storage['suggests'][:-1])
+                                                                    + "\n Доступные команды: Назад")
                     else:
-                        output_message = "Метод {} нельзя оплатить, нехватает денег. \n Список доступных методов восстановления" \
-                                         " здоровья: {}".format(product, ",\n".join(user_storage['suggests'][:-1])
-                                                                + "\n Доступные команды: Назад")
+                        output_message = "Метод {} не найден, повторите запрос. \n Ваше здоровье: {} \n Список доступных методов восстановления здоровья:" \
+                                         " \n {}".format(input_message, health, ",\n".join(user_storage['suggests'][:-1])
+                                                      + "\n Доступные команды: Назад")
                 else:
-                    output_message = "Метод {} не найден, повторите запрос. \n Список доступных методов восстановления здоровья:" \
-                                     " {}".format(input_message, ",\n".join(user_storage['suggests'][:-1])
-                                                  + "\n Доступные команды: Назад")
+                    output_message = "Вы полностью здоровы. \n Список доступных методов восстановления здоровья:" \
+                                         " {} Доступные команды: Назад".format(",\n".join(user_storage['suggests'][:-1]))
 
                 buttons, user_storage = get_suggests(user_storage)
                 return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request, handler)
@@ -286,11 +313,10 @@ def handle_dialog(request, response, user_storage, database):
         if handler.count("mood"):
             # start_page -> start_next -> food_recharge -> mood_recharge
             if handler.endswith("mood_recharge"):
-                mood = "сюда вставить получение здоровья пользователя"
-
-                index = "1"
-                food_list = read_answers_data("data/start_page_list")["mood"][index]
-                user_storage['suggests'] = [i+" цена {} восполнение {}".format(food_list[i][0], food_list[i][1]) for i in food_list.keys()]
+                mood = database.get_entry("users_info", ['Mood'], {'request_id': request.user_id})[0][0]
+                index = database.get_entry("users_info", ['Lvl'], {'request_id': request.user_id})[0][0]
+                mood_list = read_answers_data("data/start_page_list")["mood"][index]
+                user_storage['suggests'] = [i+" цена {} восполнение {}".format(mood_list[i][0], mood_list[i][1]) for i in mood_list.keys()]
 
                 handler += "->next"
 
@@ -304,30 +330,43 @@ def handle_dialog(request, response, user_storage, database):
             if handler.endswith("next"):
                 # !! Необходимо добавить в БД уровень игрока, который я потом буду подсчитывать, стартовый - первый.
                 # !! Этот уровень и есть индекс, агааа.
-                index = "1"
-                product = ""
-                food_list = read_answers_data("data/start_page_list")["mood"][index]
-                for i in food_list.keys():
-                    if i.lower().startswith(input_message):
-                        product = i
-                        product_price = food_list[i][0]
-                        product_weight = food_list[i][1]
+                mood = database.get_entry("users_info", ['Mood'], {'request_id': request.user_id})[0][0]
+                if mood != 100:
+                    index = database.get_entry("users_info", ['Lvl'], {'request_id': request.user_id})[0][0]
+                    product = ""
+                    product_price = 0
+                    product_weight = 0
+                    mood_list = read_answers_data("data/start_page_list")["mood"][index]
+                    for i in mood_list.keys():
+                        if i.lower().startswith(input_message):
+                            product = i
+                            product_price = mood_list[i][0]
+                            product_weight = mood_list[i][1]
 
-                if product:
-                    # !! Дальше мы проверяем, можем ли мы купить этот продукт,
-                    # поэтому пока что тут просто будет очередной флажок
-                    flag = True
-                    if flag == True:
-                        output_message = "Метод {} успешно оплачен. \n Список доступных методов восстановления настроения: {}"\
-                            .format(product, ",\n".join(user_storage['suggests'][:-1])+ "\n Доступные команды: Назад")
+                    if product:
+                        # !! Дальше мы проверяем, можем ли мы купить этот продукт,
+                        # поэтому пока что тут просто будет очередной флажок
+                        money = database.get_entry("users_info", ['Money'], {'request_id': request.user_id})[0][0]
+                        if money - product_price >= 0:
+                            mood = mood + product_weight if (mood + product_weight) % 100 and (
+                                    mood + product_weight) < 100 else 100
+                            database.update_entries('users_info', request.user_id, {'Mood': mood},
+                                                    update_type='rewrite')
+                            database.update_entries('users_info', request.user_id, {'Money': money - product_price},
+                                                    update_type='rewrite')
+                            output_message = "Метод {} успешно оплачен. \n Ваш настроение: {} \n Ваши финансы: {} \n Список доступных методов восстановления настроения: \n {}"\
+                                .format(product, mood, money - product_price, ",\n".join(user_storage['suggests'][:-1])+ "\n Доступные команды: Назад")
+                        else:
+                            output_message = "Метод {} нельзя оплатить, нехватает денег: {}\n Ваш настроение: {} \n Ваши финансы: {} \n Список доступных методов восстановления" \
+                                             " \n настроения: {}".format(product, product_price - money, mood, money, ",\n".join(user_storage['suggests'][:-1])
+                                                                      + "\n Доступные команды: Назад")
                     else:
-                        output_message = "Метод {} нельзя оплатить, нехватает денег. \n Список доступных методов восстановления" \
-                                         " настроения: {}".format(product, ",\n".join(user_storage['suggests'][:-1])
-                                                                  + "\n Доступные команды: Назад")
+                        output_message = "Метод {} не найден, повторите запрос. \nВаш настроение: {} \n  Список доступных методов восстановления здоровья:" \
+                                         " \n {}".format(input_message, mood, ",\n".join(user_storage['suggests'][:-1])
+                                                      + "\n Доступные команды: Назад")
                 else:
-                    output_message = "Метод {} не найден, повторите запрос. \n Список доступных методов восстановления здоровья:" \
-                                     " {}".format(input_message, ",\n".join(user_storage['suggests'][:-1])
-                                                  + "\n Доступные команды: Назад")
+                    output_message = "У вас прекрасное настроение. \n Список доступных методов восстановления здоровья:" \
+                                     " \n {} Доступные команды: Назад".format(",\n".join(user_storage['suggests'][:-1]))
 
                 buttons, user_storage = get_suggests(user_storage)
                 return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request, handler)
@@ -366,10 +405,11 @@ def handle_dialog(request, response, user_storage, database):
             return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request, handler)
 
         if handler == "profit_page":
-            job = "сюда вставить получение работы пользователя"
-            freelance = "сюда вставить получение фриланса пользователя"
-            bank = "сюда вставить получение банка пользователя"
-            business = "сюда вставить получение бизнесса пользователя"
+            job = database.get_entry("users_info", ['Job'], {'request_id': request.user_id})[0][0]
+            freelance = database.get_entry("users_info", ['Freelance'], {'request_id': request.user_id})[0][0]
+            bank = (database.get_entry("users_info", ['Deposit'], {'request_id': request.user_id})[0][0],
+                    database.get_entry("users_info", ['Credit'], {'request_id': request.user_id})[0][0])
+            # business = database.get_entry("users_info", ['Business'], {'request_id': request.user_id})[0][0]
 
             user_storage['suggests'] = [
                 "Работа",
@@ -382,8 +422,8 @@ def handle_dialog(request, response, user_storage, database):
             handler += "->profit_next"
 
             output_message = "Ваши работа: {} \n Ваша фрилансерская деятельность: {} \n Информация о деньгах в банке" \
-                             " : {} \n Ваш бизнес: {} Доступные опции: {}"\
-                .format(job, freelance, bank, business, ", ".join(user_storage['suggests']))
+                             " : {} \n Доступные опции: {}"\
+                .format(job, freelance, bank, ", ".join(user_storage['suggests']))
 
             buttons, user_storage = get_suggests(user_storage)
             return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request, handler)
