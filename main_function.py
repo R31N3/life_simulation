@@ -2,7 +2,6 @@
 from __future__ import unicode_literals
 import random
 import json
-import postgresql_database
 
 Named = False
 
@@ -40,53 +39,63 @@ def map_answer(myAns, withAccent=False):
         return myAns.replace(".", "").replace(";", "").strip()
     return myAns.replace(".", "").replace(";", "").replace("+", "").strip()
 
-def ЯНичегоНеПонял(респунсь, юсер_стораждж, буттоньсы = ""):
+def update_handler(handler, database, request):
+    database.update_entries('users_info', request.user_id, {'handler': handler}, update_type='rewrite')
+    
+
+def ЯНичегоНеПонял(response, user_storage, buttons = ""):
     мэссаждж = random.choice(aliceAnswers["cantTranslate"])
-    респунсь.set_text(aliceSpeakMap(мэссаждж))
-    респунсь.set_tts(aliceSpeakMap(мэссаждж, True))
-    буттоньсы, user_storage = get_suggests(юсер_стораждж)
-    респунсь.set_buttons(буттоньсы)
-    return респунсь, user_storage
+    response.set_text(aliceSpeakMap(мэссаждж))
+    response.set_tts(aliceSpeakMap(мэссаждж, True))
+    buttons, user_storage = get_suggests(user_storage)
+    response.set_buttons(buttons)
+    return response, user_storage
 
 # Ну вот эта функция всем функциям функция, ага. Замена постоянному формированию ответа, ага, экономит 4 строчки!!
-def НуПридумаемНазваниеПотом(респунсь, юсер_стораждж, мэссаждж, буттоньсы, флажок=False):
+def НуПридумаемНазваниеПотом(response, user_storage, мэссаждж, буттоньсы, database, request, флажок=False):
     # ща будет магия
+    update_handler(handler, database, request)
     текст_муссаждж = мэссаждж.split("Доступные")[0] if "Доступные" in мэссаждж  and "Подработка" not in мэссаждж and "задолжность" not in мэссаждж else мэссаждж
     if флажок:
-        респунсь.set_text(aliceSpeakMap(текст_муссаждж))
-        респунсь.set_tts(aliceSpeakMap(мэссаждж, True))
+        response.set_text(aliceSpeakMap(текст_муссаждж))
+        response.set_tts(aliceSpeakMap(мэссаждж, True))
     else:
-        респунсь.set_text(текст_муссаждж)
-        респунсь.set_tts(мэссаждж)
-    buttons, user_storage = get_suggests(юсер_стораждж)
-    респунсь.set_buttons(буттоньсы)
-    return респунсь, user_storage
+        response.set_text(текст_муссаждж)
+        response.set_tts(мэссаждж)
+    buttons, user_storage = get_suggests(user_storage)
+    response.set_buttons(буттоньсы)
+    return response, user_storage
 
 
 def handle_dialog(request, response, user_storage, database):
-    global Named, handler
     # request.command - сообщение от пользователя
     # !! handler = "ну вот тут ты забираешь хэндлер из бд, ага"
-
     input_message = request.command.lower().strip("?!.")
     # первый запуск/перезапуск диалога
-    user_id = int("".join([str(ord(i)) for i in request.user_id]))
-    if request.is_new_session or "name" not in user_storage.keys():
-        if request.is_new_session and not database.get_entry("users", user_id):
+    if request.is_new_session or not database.get_entry("users_info",  ['Named'])[0][0]:
+        if request.is_new_session and (database.get_entry("users_info",  ['Name']) == 'null'
+                                       or not database.get_entry("users_info",  ['Name'])):
             output_message = "Приветствую, немеханический. Не получается стать программистом? " \
                       "Есть вопросы о нашей нелёгкой жизни? Запускай симулятор! " \
                       "#для продолжения необходимо пройти авторизацию, введите имя пользователя..."
             response.set_text(aliceSpeakMap(output_message))
             response.set_tts(aliceSpeakMap(output_message))
+            database.add_entries("users_info", {"request_id": request.user_id})
+            print(database.get_entry("users_info",  ['Named']))
             handler = "asking name"
+            update_handler(handler, database, request)
             return response, user_storage
+        handler = database.get_entry("users_info", ['handler'], {'request_id': request.user_id})
+        print(handler)
         if handler == "asking name":
-            Named = True
+            print(request.user_id)
+            database.update_entries('users_info', request.user_id, {'Named': True}, update_type='rewrite')
             user_storage["name"] = request.command
-            database.create_table("users_info",{'user_id': "serial primary", "request_id": request.user_id,})
-            output_message = database.get_all_entries("users_info", {'request_id': request.user_id})
+            database.update_entries('users_info', request.user_id, {'Name': input_message}, update_type='rewrite')
+            output_message = str(database.get_all_entries("users_info", {'request_id': request.user_id}))
+            print(output_message, request.user_id)
             buttons, user_storage = get_suggests(user_storage)
-            return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, True)
+            return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request, True)
 
         user_storage['suggests']= [
             "Основная информация",
@@ -103,16 +112,16 @@ def handle_dialog(request, response, user_storage, database):
                      + ", ".join(user_storage['suggests'])
         handler = "other_next"
         buttons, user_storage = get_suggests(user_storage)
-        return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, True)
+        return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request, True)
         # Вот эти вот строчечки я оставил, чтобы, если оказался слишком туп и
         # неправильно сделал ту самую функцию, можно было поправить
         # response.set_text(aliceSpeakMap(output_message))
         # response.set_tts(aliceSpeakMap(output_message,True))
         # response.set_buttons(buttons)
         # return response, user_storage
-
     # Возвращает хендлер к основному разделу
     # !! Необходимо вынести подобную проверку в отдельную функцию для вызова в других разделах
+    print(handler, input_message)
     if handler.endswith("other_next"):
         if input_message == "источник дохода" or input_message == "доход":
             handler = "profit_page"
@@ -153,7 +162,7 @@ def handle_dialog(request, response, user_storage, database):
                 ", ".join(user_storage['suggests']))
 
             buttons, user_storage = get_suggests(user_storage)
-            return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
+            return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request,)
 
         if handler == "start_page":
             money = "сюда вставить получение денег пользователя"
@@ -177,7 +186,7 @@ def handle_dialog(request, response, user_storage, database):
                 .format(money, exp, food, mood, health, date, ", ".join(user_storage['suggests']))
 
             buttons, user_storage = get_suggests(user_storage)
-            return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
+            return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request)
 
         # start_page -> start_next
         if handler.endswith("start_next"):
@@ -204,7 +213,7 @@ def handle_dialog(request, response, user_storage, database):
                             + "\n Доступные опции: Назад")
 
                 buttons, user_storage = get_suggests(user_storage)
-                return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
+                return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request,)
 
             # start_page -> start_next -> food_recharge -> food_next
             if handler.endswith("next"):
@@ -233,7 +242,7 @@ def handle_dialog(request, response, user_storage, database):
                     output_message = "Продукт {} не найден, повторите запрос".format(input_message)
 
                 buttons, user_storage = get_suggests(user_storage)
-                return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
+                return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request,)
 
         if handler.count("health"):
             # start_page -> start_next -> food_recharge -> health_recharge
@@ -251,7 +260,7 @@ def handle_dialog(request, response, user_storage, database):
                     .format(health, ",\n".join(user_storage['suggests'][:-1])+ "\n Доступные команды: Назад")
 
                 buttons, user_storage = get_suggests(user_storage)
-                return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
+                return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request,)
 
             # start_page -> start_next -> food_recharge -> health_next
             if handler.endswith("next"):
@@ -281,7 +290,7 @@ def handle_dialog(request, response, user_storage, database):
                                                   + "\n Доступные команды: Назад")
 
                 buttons, user_storage = get_suggests(user_storage)
-                return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
+                return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request,)
 
         if handler.count("mood"):
             # start_page -> start_next -> food_recharge -> mood_recharge
@@ -298,7 +307,7 @@ def handle_dialog(request, response, user_storage, database):
                     .format(mood, ",\n".join(user_storage['suggests'][:-1])+ "\n Доступные команды: Назад")
 
                 buttons, user_storage = get_suggests(user_storage)
-                return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
+                return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request,)
 
             # start_page -> start_next -> food_recharge -> food_next
             if handler.endswith("next"):
@@ -330,7 +339,7 @@ def handle_dialog(request, response, user_storage, database):
                                                   + "\n Доступные команды: Назад")
 
                 buttons, user_storage = get_suggests(user_storage)
-                return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
+                return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request,)
 
         buttons, user_storage = get_suggests(user_storage)
         return ЯНичегоНеПонял(response, user_storage)
@@ -363,7 +372,7 @@ def handle_dialog(request, response, user_storage, database):
                 ", ".join(user_storage['suggests']))
 
             buttons, user_storage = get_suggests(user_storage)
-            return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
+            return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request,)
 
         if handler == "profit_page":
             job = "сюда вставить получение работы пользователя"
@@ -386,7 +395,7 @@ def handle_dialog(request, response, user_storage, database):
                 .format(job, freelance, bank, business, ", ".join(user_storage['suggests']))
 
             buttons, user_storage = get_suggests(user_storage)
-            return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
+            return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request,)
 
         if handler.endswith("profit_next"):
             if input_message == "работа":
@@ -419,7 +428,7 @@ def handle_dialog(request, response, user_storage, database):
                         .format(job_list[job])
 
                 buttons, user_storage = get_suggests(user_storage)
-                return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
+                return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request)
 
             if handler.endswith("next"):
                 job = "1"
@@ -448,7 +457,7 @@ def handle_dialog(request, response, user_storage, database):
                     output_message = "В данный момент вы здесь работаете. Доступные команды: Назад"
                 if output_message:
                     buttons, user_storage = get_suggests(user_storage)
-                    return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
+                    return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request)
 
         if handler.count("freelance"):
             if handler.endswith("freelance"):
@@ -469,7 +478,7 @@ def handle_dialog(request, response, user_storage, database):
                         .format(current_freelance[0], current_freelance[1])
 
                 buttons, user_storage = get_suggests(user_storage)
-                return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
+                return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request)
 
             if handler.endswith("next"):
                 # !! Это снова тот индекс(уровень игрока, да).
@@ -487,17 +496,17 @@ def handle_dialog(request, response, user_storage, database):
                             output_message = "Подработка {} успешно взята на исполение. Оплата: {} Время выполнения" \
                                              " {} Доступные команды: Назад".format(i, current_freelance[1], current_freelance[2])
                             buttons, user_storage = get_suggests(user_storage)
-                            return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
+                            return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request)
 
                     output_message = "Подработка {} не найдена. Выберите одну из доступных: \n {} \n Доступные команды: Назад"\
                         .format(input_message, "\n".join(lst))
                     buttons, user_storage = get_suggests(user_storage)
-                    return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
+                    return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request)
 
                 output_message = "В данный момент вы заняты {}, подождите {}, тогда вы сможете взять новое задание." \
                     .format(current_freelance[0], current_freelance[1])
                 buttons, user_storage = get_suggests(user_storage)
-                return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
+                return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request)
 
             return ЯНичегоНеПонял(response, user_storage)
 
@@ -524,7 +533,7 @@ def handle_dialog(request, response, user_storage, database):
                                  " Доступные команды: {}".format(money, deposit, credit, available_credit, "\n".join(user_storage["suggests"]))
 
                 buttons, user_storage = get_suggests(user_storage)
-                return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
+                return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request)
 
             if handler.endswith("next"):
                 if (input_message == "внести деньги на счет" or "внести" in input_message or "на счет" in input_message) and "не " not in input_message:
@@ -550,7 +559,7 @@ def handle_dialog(request, response, user_storage, database):
                         money, deposit, percent
                     )
                     buttons, user_storage = get_suggests(user_storage)
-                    return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
+                    return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request)
 
                 if handler.endswith("next"):
                     user_storage['suggests'] = ["Назад"]
@@ -571,7 +580,7 @@ def handle_dialog(request, response, user_storage, database):
                         output_message = "{} не является численным значением, введите сумму повторно. Доступные команды: Назад".format(input_message)
 
                     buttons, user_storage = get_suggests(user_storage)
-                    return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
+                    return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request)
 
             if handler.count("repayment"):
                 if handler.endswith("repayment"):
@@ -592,7 +601,7 @@ def handle_dialog(request, response, user_storage, database):
                         output_message = credit+" Доступные команды: Назад"
 
                     buttons, user_storage = get_suggests(user_storage)
-                    return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
+                    return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request)
 
                 if handler.endswith("next"):
                     user_storage['suggests'] = ["Назад"]
@@ -626,7 +635,7 @@ def handle_dialog(request, response, user_storage, database):
                             input_message)
 
                     buttons, user_storage = get_suggests(user_storage)
-                    return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
+                    return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request)
 
             if handler.count("money_take"):
                 if handler.endswith("money_take"):
@@ -643,7 +652,7 @@ def handle_dialog(request, response, user_storage, database):
                         output_message = "В данным момент на вашем счете денег нет. Доступные команды: Назад"
 
                     buttons, user_storage = get_suggests(user_storage)
-                    return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
+                    return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request)
 
                 if handler.endswith("next"):
                     user_storage['suggests'] = ["Назад"]
@@ -666,7 +675,7 @@ def handle_dialog(request, response, user_storage, database):
                             input_message)
 
                     buttons, user_storage = get_suggests(user_storage)
-                    return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
+                    return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request)
 
             if handler.count("credit"):
                 if handler.endswith("credit"):
@@ -687,7 +696,7 @@ def handle_dialog(request, response, user_storage, database):
                     else:
                         output_message = "Выдача нового кредита в данный момент недоступна, так как имеется задолжность. Доступные команды: Назад"
                     buttons, user_storage = get_suggests(user_storage)
-                    return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
+                    return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request)
 
                 if handler.endswith("next"):
                     #!! Сделать изменение кредита пользователя
@@ -707,7 +716,7 @@ def handle_dialog(request, response, user_storage, database):
                         else:
                             output_message = "Выдача нового кредита в данный момент недоступна, так как имеется задолжность. Доступные команды: Назад"
                         buttons, user_storage = get_suggests(user_storage)
-                        return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons)
+                        return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request)
 
                     buttons, user_storage = get_suggests(user_storage)
                     return ЯНичегоНеПонял(response, user_storage)
@@ -718,6 +727,7 @@ def handle_dialog(request, response, user_storage, database):
             lvl = "сюда вставить уровень игрока"
 
 
+    update_handler(handler, database, request)
 
     if input_message in ['нет', 'не хочется', 'в следующий раз', 'выход', "не хочу", 'выйти']:
         answered = True
