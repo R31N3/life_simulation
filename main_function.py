@@ -72,8 +72,9 @@ def handle_dialog(request, response, user_storage, database):
     # !! handler = "ну вот тут ты забираешь хэндлер из бд, ага"
     input_message = request.command.lower().strip("?!.")
     # первый запуск/перезапуск диалога
-    if request.is_new_session or not database.get_entry("users_info",  ['Named'])[0][0]:
-        if request.is_new_session and (database.get_entry("users_info",  ['Name']) == 'null'
+    if request.is_new_session or not database.get_entry("users_info",  ['Named'], {'request_id': request.user_id})[0][0]:
+        if request.is_new_session and (database.get_entry("users_info",  ['Name'],
+                                                          {'request_id': request.user_id})[0][0] == 'null'
                                        or not database.get_entry("users_info",  ['Name'])):
             output_message = "Приветствую, немеханический. Не получается стать программистом? " \
                       "Есть вопросы о нашей нелёгкой жизни? Запускай симулятор! " \
