@@ -142,9 +142,7 @@ class DatabaseManager:
         """
         result_list = []
         for item in string.split(', '):  # если есть хотя бы 1 буква, то строка не число, но может быть bool
-            if any([symbol.isalpha() for symbol in item]) \
-                    and item != 'True' and item != 'False' \
-                    and not (item.startswith('b') or item.startswith('r')):
+            if item != 'True' and item != 'False':
                 result_list.append(braces_type + item + braces_type)
             else:  # в случае если не нужно обрамлять, оставляем как есть
                 result_list.append(item)
