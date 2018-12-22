@@ -174,11 +174,11 @@ class DatabaseManager:
         """
         Специфическая функция. Конвертирует странную строку в лист.
         ================================================================================
-        :param string: строка вида '[entry1#&% запись2 #&% "3"]'
+        :param string: строка вида '[entry1#&% запись2 #&% "3"]'; [] опциональны
         :param separator: разделитель, по которому список будет образован
         :return: список
         """
-        return string[1:len(string)-1].split(separator)
+        return string[1:len(string)-1].split(separator) if '[' and ']' in string else string.split(separator)
 
     def create_table(self, table_name: str, columns_dict: dict):
         """
@@ -226,7 +226,7 @@ class DatabaseManager:
         #     self.connection.rollback()
         #     print('Дата: {0}\nОШИБКА:{1}'.format(time.strftime("%d.%m.%Y - %H.%M.%S", time.localtime()), exc))
 
-    def get_entry(self, table_name: str, required_values: list, where_condition=None):
+    def get_entry(self, table_name: str, required_values: list, where_condition: dict = None):
         """
         Позволяет получить 1(одну) запись, исходя из введённых параметров
         и/или условий WHERE
@@ -261,7 +261,7 @@ class DatabaseManager:
             if not self.check_for_hidden_list_sequence(result) \
             else self.convert_strange_str_to_list(result, '#&%')
 
-    def get_all_entries(self, table_name: str, where_condition=None):
+    def get_all_entries(self, table_name: str, where_condition: dict = None):
         """
         Возвращает все записи при специфическом user_id
         БЕЗ СПЕЦИФИКАЦИИ ОТДАСТ ВСЮ ТАБЛИЦУ, ОСТОРОЖНО!
@@ -336,7 +336,7 @@ class DatabaseManager:
                         }
 
                 query = "UPDATE " + table_name + \
-                        " SET " + self.convert_dict_to_string(result_dict, separator=" = ") + \
+                        " SET " + self.convert_dict_to_string(result_dict, separator=' = ') + \
                         " WHERE request_id = '" + user_id + "'"
                 # !!! ЗАМЕНИТЬ user_id на
                 # " AND ".join(self.convert_dict_to_string(where_condition, "=").split(", ")) !!!
@@ -393,9 +393,9 @@ class DatabaseManager:
         # try:
         with self.connection.cursor() as cursor:
             cursor.execute(query)
-        if 'select' in query.lower():
-            result = cursor.fetchall()
-            return result
+            if 'select' in query.lower():
+                result = cursor.fetchall()
+                return result
         # except Exception as exc:
         #     self.connection.rollback()
         #     print('Дата: {0}\nОШИБКА:{1}'.format(time.strftime("%d.%m.%Y - %H.%M.%S", time.localtime()), exc))
