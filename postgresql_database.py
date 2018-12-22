@@ -6,7 +6,8 @@ import time
 
 
 class DatabaseManager:
-    def __init__(self, host, user, password, dbname, port='5432'):
+    def __init__(self, host: str, user: str, password: str, dbname: str,
+                 port: str ='5432', require_autocommit: bool = True):
         """
         Производит первичное подключение к базе данных при инициализации
         ================================================================================
@@ -24,10 +25,14 @@ class DatabaseManager:
         '''               host='localhost', user='shagonru', password='13082000'
                           dbname='programmer_simulator', port='5432'         '''
         self.connection = psycopg2.connect(**server_params)
+        self.require_autocommit = require_autocommit
+        self.connection.autocommit = self.require_autocommit
         print(threading.current_thread(), '__init__')
 
     def __del__(self):
         print(threading.current_thread(), '__del__')
+        if self.require_autocommit is False:
+            self.connection.commit()
         self.connection.close()
 
     @staticmethod
@@ -52,9 +57,9 @@ class DatabaseManager:
         :return: строка с типом, пригодным для SQL
         """
         converted_type = ''
-        types_dict = {'serial': 'SERIAL', 'str':   'TEXT',  'int':  'INTEGER',
-                      'float':  'REAL',   'bytes': 'BYTEA', 'bool': 'BOOLEAN',
-                      'list': 'TEXT'}
+        types_dict = {'serial':  'SERIAL',   'str':    'TEXT',   'int':     'INTEGER',
+                      'float':   'REAL',     'string': 'TEXT',   'integer': 'INTEGER',
+                      'list':    'TEXT',     'bytes':  'BYTEA',  'bool':    'BOOLEAN'}
 
         if unconverted_type_string.split()[0].upper() in types_dict.values():
             converted_type += unconverted_type_string.split()[0].upper()
