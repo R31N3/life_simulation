@@ -19,10 +19,11 @@ def init_database(host, user, password, dbname):
                        "Money": "int DEFAULT 1000", "Food": "int DEFAULT 70", "Exp": "int DEFAULT 0",
                        "Lvl": "str DEFAULT '0'", "Job": "str DEFAULT 'Безработный#$0'",
                        "Freelance": "str DEFAULT 'Безделие#$бесценный опыт о потери времени#$бесконечность'",
-                       "Day": "int DEFAULT 0", "Credit": "str DEFAULT 'index#$money#$percent#$time'",
-                       "Deposit": "str DEFAULT 'index#$money#$ercent'", "Mood": "int DEFAULT 70",
+                       "Day": "int DEFAULT 0", "Credit": "str DEFAULT 'index#$10#$percent#$time'",
+                       "Deposit": "str DEFAULT 'index#$0#$1'", "Mood": "int DEFAULT 70",
                        "Health": "int DEFAULT 70", "Money_Waste": "int DEFAULT 0",
-                       "Food_Waste": "int DEFAULT 20", "Mood_Waste": "int DEFAULT 20" })
+                       "Food_Waste": "int DEFAULT 20", "Mood_Waste": "int DEFAULT 20",
+                       "user_requirements": "str DEFAULT ''"})
     return psdb
 
 

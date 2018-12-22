@@ -65,13 +65,13 @@ def НуПридумаемНазваниеПотом(response, user_storage, м�
 
 def handle_dialog(request, response, user_storage, database):
     # request.command - сообщение от пользователя
-    # !! handler = "ну вот тут ты забираешь хэндлер из бд, ага"
     input_message = request.command.lower().strip("?!.")
     # первый запуск/перезапуск диалога
     if request.is_new_session or not database.get_entry("users_info",  ['Named'], {'request_id': request.user_id})[0][0]:
-        if request.is_new_session and (database.get_entry("users_info",  ['Name'],
+        print(database.get_entry("users_info", ['Name'], {'request_id': request.user_id}) == 'null')
+        if request.is_new_session and (database.get_entry("users_info", ['Name'],
                                                           {'request_id': request.user_id}) == 'null'
-                                       or not database.get_entry("users_info",  ['Name'])):
+                                       or not database.get_entry("users_info", ['Name'], {'request_id': request.user_id})):
             output_message = "Приветствую, немеханический. Не получается стать программистом? " \
                       "Есть вопросы о нашей нелёгкой жизни? Запускай симулятор! " \
                       "#для продолжения необходимо пройти авторизацию, введите имя пользователя..."
@@ -292,13 +292,14 @@ def handle_dialog(request, response, user_storage, database):
                                                     update_type='rewrite')
                             database.update_entries('users_info', request.user_id, {'Money': money - product_price},
                                                     update_type='rewrite')
-                            output_message = "Метод {} успешно оплачен. \n Ваше здоровье: {} \n Ваши финансы: {} \n Список доступных методов восстановления" \
-                                             " здоровья: {}"\
+                            output_message = "Метод {} успешно оплачен. \n Ваше здоровье: {} \n Ваши финансы: {}" \
+                                             " \n Список доступных методов восстановления здоровья: {}"\
                                 .format(product, health,money - product_price, ",\n".join(user_storage['suggests'][:-1])+ "\n Доступные команды: Назад")
                         else:
-                            output_message = "Метод {} нельзя оплатить, нехватает денег: {} \n Ваше здоровье: {} \n Ваши финансы: {} \n Список доступных методов восстановления \n" \
-                                             " здоровья: {}".format(product, product_price - money, health, money, ",\n".join(user_storage['suggests'][:-1])
-                                                                    + "\n Доступные команды: Назад")
+                            output_message = "Метод {} нельзя оплатить, нехватает денег: {} \n Ваше здоровье: {} \n" \
+                                             "Ваши финансы: {} \nСписок доступных методов восстановления здоровья:\n{}"\
+                                .format(product, product_price - money, health, money,
+                                        ",\n".join(user_storage['suggests'][:-1]) + "\n Доступные команды: Назад")
                     else:
                         output_message = "Метод {} не найден, повторите запрос. \n Ваше здоровье: {} \n Список доступных методов восстановления здоровья:" \
                                          " \n {}".format(input_message, health, ",\n".join(user_storage['suggests'][:-1])
@@ -426,7 +427,7 @@ def handle_dialog(request, response, user_storage, database):
                              " : \n Задолжность по кредиту: {} Процентная ставка: {} Срок выплаты: {}\n Сумма вклада: {} Процент по" \
                              " вкладу: {}\n Доступные команды: {}"\
                 .format(job[0], job[1], freelance[0], freelance[2], freelance[1], bank[0][1], bank[0][2], bank[0][3],
-                        bank[1][0], bank[1][1], ", ".join(user_storage['suggests']))
+                        bank[1][1], bank[1][2], ", ".join(user_storage['suggests']))
 
             buttons, user_storage = get_suggests(user_storage)
             return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request, handler)
@@ -464,37 +465,51 @@ def handle_dialog(request, response, user_storage, database):
                         .format(lst[0],
                                 "\n".join(["{} Зарплата: {}".format(job_list[i][0], job_list[i][1]) for i in lst[1:]]))
                 else:
-                    output_message = "Список вакансий: \n {} \n Вы и так максимально успешны\n Доступные команды: Назад"\
-                        .format(job_list[job_index])
+                    output_message = "Текущая: {} Зарплата: {} \n Вы слишком умны, для вас работы больше пока не" \
+                                     " придумали\n Доступные команды: Назад"\
+                        .format(job_list[job_index][0], job_list[job_index][1])
 
                 buttons, user_storage = get_suggests(user_storage)
                 return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request, handler)
 
             if handler.endswith("next"):
-                job = "1"
+                job = database.get_entry("users_info", ['Job'], {'request_id': request.user_id})[0][0].split("#$")
                 user_storage['suggests'] = ["Назад"]
                 handler = "->".join(handler.split("->")[:-1])
                 output_message = ""
                 # !! Вот сюда засунуть нужно образование игрока
-                user_requirements = ["..."]
+                user_requirements = database.get_entry("users_info",
+                                            ['user_requirements'], {'request_id': request.user_id})[0][0].split("#$")
                 job_list = read_answers_data("data/profit_page_list")["job"]
-                if not input_message in job_list[job][0].lower():
-                    keys = sorted(job_list.keys())
-                    border = len(keys[int(job):]) % 10 if len(keys[int(job):]) % 10 != 0 else 10
-                    for i in keys[int(job):border + 1]:
-                        if input_message in job_list[i][0].lower():
-                            difference = [j for j in job_list[i][2] if j not in user_requirements]
-                            if not difference:
-                                # !! Тут мы меняем работу на новую, если у нас совпадают все требования
-                                job = i
-                                output_message = "Вы успешно повысились до {}. Доступные команды: Назад"\
-                                    .format(job_list[job][0])
-                            else:
-                                output_message = "Повышение невозможно, нехватает следующего: {}. Доступные команды: Назад"\
-                                    .format(", ".join(difference))
-                            break
+                keys = sorted(job_list.keys())
+                job_index = 0
+                for i in keys:
+                    if job[0] in job_list[i]:
+                        job_index = i
+                        break
+                if int(job_index) != len(keys):
+                    if not input_message in job_list[job_index][0].lower():
+                        border = len(keys[int(job_index):]) % 10 if len(keys[int(job_index):]) % 10 != 0 else 10
+                        for i in keys[int(job_index):border + 1]:
+                            if input_message in job_list[i][0].lower():
+                                difference = [j for j in job_list[i][2] if j not in user_requirements]
+                                if not difference:
+                                    # !! Тут мы меняем работу на новую, если у нас совпадают все требования
+                                    job_index = i
+                                    job = "{}#${}".format(job_list[job_index][0], job_list[job_index][1])
+                                    database.update_entries('users_info', request.user_id, {'Job': job},
+                                                            update_type='rewrite')
+                                    output_message = "Вы успешно повысились до {}. Доступные команды: Назад"\
+                                        .format(job_list[job_index][0])
+                                else:
+                                    output_message = "Повышение невозможно, нехватает следующего: {}. Доступные команды: Назад"\
+                                        .format(", ".join(difference))
+                                break
+                    else:
+                        output_message = "В данный момент вы здесь уже работаете. Доступные команды: Назад"
                 else:
-                    output_message = "В данный момент вы здесь работаете. Доступные команды: Назад"
+                    output_message = "Текущая: {} Зарплата: {} \n Вы слишком умны, для вас работы больше пока не" \
+                                     " придумали\n Доступные команды: Назад"
                 if output_message:
                     buttons, user_storage = get_suggests(user_storage)
                     return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request, handler)
@@ -502,49 +517,68 @@ def handle_dialog(request, response, user_storage, database):
         if handler.count("freelance"):
             if handler.endswith("freelance"):
                 # !! Вот тут нужно сделать получение нынешней подработки из БД в переменную ниже
-                current_freelance = ["нет", "вреня, которое осталось"]
+                current_freelance = database.get_entry("users_info", ['Freelance'],
+                                                       {'request_id': request.user_id})[0][0].split("#$")
                 user_storage['suggests'] = ["Назад"]
-                if current_freelance[0] == "нет":
+                if current_freelance[0] == "Безделие":
+                    output_message = "В данный момент ваш род занятий: {} Получаемый доход: {} Время выполнения: {}\n"\
+                        .format(current_freelance[0], current_freelance[1], current_freelance[2])
                     # !! Это снова тот индекс(уровень игрока, да).
-                    index = "1"
+                    index = database.get_entry("users_info", ['Lvl'],
+                                                       {'request_id': request.user_id})[0][0]
                     freelance_list = read_answers_data("data/profit_page_list")["freelance"][index]
+                    user_storage['suggests'] += [i for i in freelance_list.keys()]
                     handler += "->next"
-                    lst = ["{} Оплата: {} Время выполнения {}"
-                               .format(i, freelance_list[i][0], freelance_list[i][1]) for i in freelance_list.keys()]
-                    output_message = "Список доступных подработок: \n {}\n " \
+                    lst = ["{}. Получаемый доход: {}. Время выполнения: {}."
+                               .format(i, freelance_list[i][0], freelance_list[i][2])
+                           for i in freelance_list.keys()]
+                    output_message += "Список доступных подработок: \n {}\n " \
                                      "Выберите желаемую.  \n Доступные команды: Назад".format("\n".join(lst))
                 else:
                     output_message = "В данный момент вы заняты {}, подождите {}, тогда вы сможете взять новое задание."\
-                        .format(current_freelance[0], current_freelance[1])
+                        .format(current_freelance[0], current_freelance[2])
 
                 buttons, user_storage = get_suggests(user_storage)
                 return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request, handler)
 
             if handler.endswith("next"):
                 # !! Это снова тот индекс(уровень игрока, да).
-                index = "1"
-                current_freelance = ["нет", "вреня, которое осталось"]
+                index = database.get_entry("users_info", ['Lvl'],
+                                           {'request_id': request.user_id})[0][0]
+                current_freelance = database.get_entry("users_info", ['Freelance'],
+                                                       {'request_id': request.user_id})[0][0].split("#$")
                 user_storage['suggests'] = ["Назад"]
-                if current_freelance[0] == "нет":
+                if current_freelance[0] == "Безделие":
                     freelance_list = read_answers_data("data/profit_page_list")["freelance"][index]
                     lst = ["{} Оплата: {} Время выполнения {}"
                                .format(i, freelance_list[i][0], freelance_list[i][1]) for i in freelance_list.keys()]
                     for i in freelance_list.keys():
-                        if input_message in i:
+                        print(input_message, i)
+                        if input_message in i.lower():
                             # !! Вот тут нужно сделать внесение новой подработки в БД из переменной ниже
-                            current_freelance = [i, freelance_list[i][0], freelance_list[i][1]]
-                            output_message = "Подработка {} успешно взята на исполение. Оплата: {} Время выполнения" \
-                                             " {} Доступные команды: Назад".format(i, current_freelance[1], current_freelance[2])
-                            buttons, user_storage = get_suggests(user_storage)
-                            return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request, handler)
-
-                    output_message = "Подработка {} не найдена. Выберите одну из доступных: \n {} \n Доступные команды: Назад"\
-                        .format(input_message, "\n".join(lst))
-                    buttons, user_storage = get_suggests(user_storage)
-                    return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request, handler)
-
-                output_message = "В данный момент вы заняты {}, подождите {}, тогда вы сможете взять новое задание." \
-                    .format(current_freelance[0], current_freelance[1])
+                            user_requirements = database.get_entry("users_info",
+                                                                   ['user_requirements'],
+                                                                   {'request_id': request.user_id})[0][0].split("#$")
+                            difference = [j for j in freelance_list[i][3] if j not in user_requirements]
+                            if not difference:
+                                current_freelance = [i, freelance_list[i][0], freelance_list[i][1]]
+                                print(current_freelance)
+                                output_message = "Подработка {} успешно взята на исполение. Оплата: {} Время выполнения" \
+                                                 " {} Доступные команды: Назад".format(i, current_freelance[1], current_freelance[2])
+                                database.update_entries('users_info', request.user_id, {'Freelance': "#$".join(current_freelance)},
+                                                        update_type='rewrite')
+                            else:
+                                output_message = "Взятие данной подработки на исполнение невозможно," \
+                                                 " нехватает следующего: {}. Доступные команды: Назад" \
+                                    .format(", ".join(difference))
+                            break
+                    else:
+                        user_storage['suggests'] = [i for i in freelance_list.keys()] + ["Назад"]
+                        output_message = "Подработка {} не найдена. Выберите одну из доступных: \n {} \n Доступные команды: Назад"\
+                            .format(input_message, "\n".join(lst))
+                else:
+                    output_message = "В данный момент вы заняты {}, подождите {}, тогда вы сможете взять новое задание." \
+                        .format(current_freelance[0], current_freelance[1])
                 buttons, user_storage = get_suggests(user_storage)
                 return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request, handler)
 
@@ -552,25 +586,34 @@ def handle_dialog(request, response, user_storage, database):
 
         if handler.count("bank"):
             if handler.endswith("bank"):
-                money = "сюда вставить получение денег пользователя"
                 handler += "->next"
-                deposit = "Сюда вставить информацию о текущем вкладе игрока"
-                credit = [0, 0]
-                # !! Это снова тот индекс(уровень игрока, да).
-                index = "1"
+                money = database.get_entry("users_info", ['Money'], {'request_id': request.user_id})[0][0]
+                credit, deposit = database.get_entry("users_info", ['Credit'],
+                                                     {'request_id': request.user_id})[0][0].split("#$"),\
+                                  database.get_entry("users_info", ['Deposit'],
+                                                     {'request_id': request.user_id})[0][0].split("#$")
+                credit[1] = int(credit[1])
+                deposit[1] = int(deposit[1])
+                index = database.get_entry("users_info", ['Lvl'],
+                                           {'request_id': request.user_id})[0][0]
                 available_credit = read_answers_data("data/profit_page_list")["credit"][index]\
-                    if credit[0] == 0 \
+                    if credit[1] == "0" \
                     else "Выдача нового кредита в данный момент недоступна, так как имеется задолжность"
+                if available_credit.__class__ == list:
+                    available_credit = "Выдаваемая сумма: {} Процентная ставка: {} Срок выдачи: {}".format(
+                        available_credit[0], available_credit[1], available_credit[2])
                 user_storage['suggests'] = [i for i in [
                     "Внести деньги на счет",
-                    "Погасить задолжность по кредиту" if credit[0] != 0  else "",
-                    "Взять деньги со счета" if deposit != 0 else "",
-                    "Взять кредит" if credit[0] == 0 else "",
+                    "Погасить задолжность по кредиту" if credit[1] != 0  else "",
+                    "Взять деньги со счета" if deposit[1] != 0 else "",
+                    "Взять кредит" if credit[1] == 0 else "",
                     "Назад"
                 ] if i]
-                output_message = "Наличные: {}р \n Информация о вашем банковском счете: \n Нынешняя сумма вклада: {} \n" \
-                                 " Нынешняя задолжность по кредиту: {} \n Доступна сумма выдачи денег по кредиту {} \n" \
-                                 " Доступные команды: {}".format(money, deposit, credit, available_credit, "\n".join(user_storage["suggests"]))
+                output_message = "Наличные: {}р \n Информация о деньгах в банке" \
+                             " : \n Задолжность по кредиту: {} Процентная ставка: {} Срок выплаты: {}\n Сумма вклада: {}" \
+                                 " Процент по вкладу: {} \n Доступный кредит: {}\n Доступные команды: {}".format(
+                    money, credit[1], credit[2], credit[3],
+                        deposit[1], deposit[2], available_credit, "\n".join(user_storage["suggests"]))
 
                 buttons, user_storage = get_suggests(user_storage)
                 return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request, handler)
@@ -587,16 +630,15 @@ def handle_dialog(request, response, user_storage, database):
 
             if handler.count("money_deposit"):
                 if handler.endswith("money_deposit"):
-                    money = "сюда вставить получение денег пользователя"
-                    # !! Это снова тот индекс(уровень игрока, да).
-                    index = 1
+                    money = database.get_entry("users_info", ['Money'], {'request_id': request.user_id})[0][0]
                     handler += "->next"
                     user_storage['suggests'] = ["Назад"]
-                    percent = read_answers_data("data/profit_page_list")["deposit"][index]
-                    deposit = "сюда вставить информацию о текущем вкладе игрока"
+                    deposit = database.get_entry("users_info", ['Deposit'],
+                                                     {'request_id': request.user_id})[0][0].split("#$")
+                    deposit[1] = int(deposit[1])
                     output_message = "Имеющаяся сумма у вас на руках: {}р \n Сумма во вкладе: {}р Процент по вкладу: {}% \n" \
                                      " Введите сумму, которую вы хотели бы внести на счет. \n Доступные команды: Назад".format(
-                        money, deposit, percent
+                        money, deposit[1], deposit[2]
                     )
                     buttons, user_storage = get_suggests(user_storage)
                     return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request, handler)
@@ -604,18 +646,20 @@ def handle_dialog(request, response, user_storage, database):
                 if handler.endswith("next"):
                     user_storage['suggests'] = ["Назад"]
                     try:
-                        # !!сюда вставить получение денег пользователя
-                        money = 1488
+                        money = database.get_entry("users_info", ['Money'], {'request_id': request.user_id})[0][0]
                         if int(input_message) <= money:
-                            #!!сюда вставить информацию о текущем вкладе игрока
-                            deposit = 228
-                            #!! Здесь сделать апдейт депозита и налички игрока
+                            deposit = database.get_entry("users_info", ['Deposit'],
+                                                         {'request_id': request.user_id})[0][0].split("#$")
+                            deposit[1] = str(int(deposit[1])+int(input_message))
+                            database.update_entries('users_info', request.user_id, {'Money': money-int(input_message)},
+                                                    update_type='rewrite')
+                            database.update_entries('users_info', request.user_id, {'Deposit': "#$".join(deposit)},
+                                                    update_type='rewrite')
                             output_message = "Ваш вклад увеличился и теперь составляет {}р. \n Оставшиеся деньги у вас на руках: {}р Доступные команды: Назад".format(
-                                deposit+int(input_message), money-int(input_message)
+                                deposit[1], money-int(input_message)
                             )
                         else:
                             output_message = "У вас недостаточно денег для внесения, нехватает {}р. Доступные команды: Назад".format(int(input_message)-money)
-
                     except TypeError:
                         output_message = "{} не является численным значением, введите сумму повторно. Доступные команды: Назад".format(input_message)
 
@@ -624,18 +668,15 @@ def handle_dialog(request, response, user_storage, database):
 
             if handler.count("repayment"):
                 if handler.endswith("repayment"):
-                    money = "сюда вставить получение денег пользователя"
-                    # !! Это снова тот индекс(уровень игрока, да).
-                    index = "1"
                     handler += "->next"
                     user_storage['suggests'] = ["Назад"]
-                    #!! сюда вставить информацию о текущем кредите игрока
-                    credit = "В данный момент задолжности нет."
-                    #credit = [1488, 13,37, 21]
-                    if credit != "В данный момент задолжности нет.":
-                        output_message = "Имеющаяся сумма у вас на руках: {}р \n Задолжность по кредиту: {}р Процент по кредиту: {}% Срок выплаты: Осталось {} \n" \
+                    money = database.get_entry("users_info", ['Money'], {'request_id': request.user_id})[0][0]
+                    credit = database.get_entry("users_info", ['Credit'],
+                                                 {'request_id': request.user_id})[0][0].split("#$")
+                    if credit[1] != "0":
+                        output_message = "Имеющаяся сумма у вас на руках: {}р \n Задолжность по кредиту: {} Процентная ставка: {} Срок выплаты: {} \n" \
                                          " Введите сумму, которую вы хотели бы внести на кредитный счет. \n Доступные команды: Назад".format(
-                            money, credit[0], credit[1], credit[2]
+                            money, credit[1], credit[2], credit[3]
                         )
                     else:
                         output_message = credit+" Доступные команды: Назад"
@@ -646,11 +687,9 @@ def handle_dialog(request, response, user_storage, database):
                 if handler.endswith("next"):
                     user_storage['suggests'] = ["Назад"]
                     try:
-                        # !!сюда вставить получение денег пользователя
-                        money = 14088
-                        # !!сюда вставить информацию о текущем вкладе игрока
-                        credit = "В данный момент задолжности нет."
-                        #credit = [1488, 13,37, 21]
+                        money = database.get_entry("users_info", ['Money'], {'request_id': request.user_id})[0][0]
+                        credit = database.get_entry("users_info", ['Credit'],
+                                                    {'request_id': request.user_id})[0][0].split("#$")
                         if credit != "В данный момент задолжности нет.":
                             credit_sum = credit[0]
 
