@@ -355,7 +355,6 @@ class DatabaseManager:
         :param table_name: название таблицы
         :param columns_dict: словарь с парой столбец : запись из удаляемая строка,
         то есть удалена будет строка, в стобце которой есть такая запись
-        :return:
         """
         # try:
         with self.connection.cursor() as cursor:
