@@ -43,7 +43,7 @@ def init_database(host, user, password, dbname):
     psdb.drop_table("users_info")
     psdb.create_table("users_info",
                       {'user_id': "serial primary", "request_id": "str NOT NULL UNIQUE",
-                       "handler": "string DEFAULT 'handler is empty'", "Named": "bool DEFAULT False",
+                       "handler": "str DEFAULT 'handler is empty'", "Named": "bool DEFAULT False",
                        "Experience": "int DEFAULT 0", "Money": "int DEFAULT 1000", "Food": "int DEFAULT 100",
                        "Exp": "int DEFAULT 0", "Lvl": "str DEFAULT '0'", "Job": "str DEFAULT '0'",
                        "Freelance": "str DEFAULT 'zp#&time#&exp'", "credit": "str DEFAULT 'index#&money#&time'",
