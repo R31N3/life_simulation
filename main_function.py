@@ -405,25 +405,28 @@ def handle_dialog(request, response, user_storage, database):
             return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request, handler)
 
         if handler == "profit_page":
-            job = database.get_entry("users_info", ['Job'], {'request_id': request.user_id})[0][0]
-            freelance = database.get_entry("users_info", ['Freelance'], {'request_id': request.user_id})[0][0]
-            bank = (database.get_entry("users_info", ['Deposit'], {'request_id': request.user_id})[0][0],
-                    database.get_entry("users_info", ['Credit'], {'request_id': request.user_id})[0][0])
+            job = database.get_entry("users_info", ['Job'], {'request_id': request.user_id})[0][0].split("#$")
+            freelance = database.get_entry("users_info", ['Freelance'], {'request_id': request.user_id})[0][0].split("#$")
+            bank = (database.get_entry("users_info", ['Credit'], {'request_id': request.user_id})[0][0].split("#$"),
+                    database.get_entry("users_info", ['Deposit'], {'request_id': request.user_id})[0][0].split("#$"))
+            print(job, 1, freelance, 2, bank)
             # business = database.get_entry("users_info", ['Business'], {'request_id': request.user_id})[0][0]
 
             user_storage['suggests'] = [
                 "Работа",
                 "Фриланс",
                 "Банк",
-                "Бизнес",
                 "Назад"
             ]
 
             handler += "->profit_next"
 
-            output_message = "Ваши работа: {} \n Ваша фрилансерская деятельность: {} \n Информация о деньгах в банке" \
-                             " : {} \n Доступные опции: {}"\
-                .format(job, freelance, bank, ", ".join(user_storage['suggests']))
+            output_message = "Ваши работа: {} Заработок: {}р \n Ваша фрилансерская деятельность: {} Время выполнения: {}" \
+                             " Получаемая прибыль: {} \n Информация о деньгах в банке" \
+                             " : \n Задолжность по кредиту: {} Процентная ставка: {} Срок выплаты: {}\n Сумма вклада: {} Процент по" \
+                             " вкладу: {}\n Доступные команды: {}"\
+                .format(job[0], job[1], freelance[0], freelance[2], freelance[1], bank[0][1], bank[0][2], bank[0][3],
+                        bank[1][0], bank[1][1], ", ".join(user_storage['suggests']))
 
             buttons, user_storage = get_suggests(user_storage)
             return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request, handler)
@@ -440,23 +443,29 @@ def handle_dialog(request, response, user_storage, database):
 
         if handler.count("job"):
             if handler.endswith("job"):
-                # !! Вот тут нужно сделать получение работы из БД
-                job = "1"
+                job = database.get_entry("users_info", ['Job'], {'request_id': request.user_id})[0][0].split("#$")
                 job_list = read_answers_data("data/profit_page_list")["job"]
                 keys = sorted(job_list.keys())
+                job_index = 0
+                for i in keys:
+                    if job[0] in job_list[i]:
+                        job_index = i
+                        break
                 user_storage['suggests'] = ["Назад"]
                 # Если у нас не максимально возможная ЗП, выдаем список вакансий длиной максимум до 10
-                if int(job) != len(keys):
-                    border = len(keys[int(job):]) % 10 if len(keys[int(job):]) % 10 != 0 else 10
+                if int(job_index) != len(keys):
+                    border = len(keys[int(job_index):]) % 10 if len(keys[int(job_index):]) % 10 != 0 else 10
                     handler += "->next"
-                    lst = ["Текущая: {} Зарплата: {}".format(job_list[job][0], job_list[job][1])]
-                    lst += keys[int(job):border + 1]
-                    output_message = "Список вакансий: \n {} \n {} \n Выберите желаемую.  \n Доступные команды: Назад"\
+                    lst = ["Текущая: {} Зарплата: {}".format(job_list[job_index][0], job_list[job_index][1])]
+                    print(lst)
+                    lst += keys[int(job_index) + 1:border + 1]
+                    print(lst[1:], lst)
+                    output_message = "Список вакансий: \n{} \n{} \nВыберите желаемую.  \nДоступные команды: Назад"\
                         .format(lst[0],
                                 "\n".join(["{} Зарплата: {}".format(job_list[i][0], job_list[i][1]) for i in lst[1:]]))
                 else:
-                    output_message = "Список вакансий: \n {} \n Выбирать больше не из чего. \n Доступные команды: Назад"\
-                        .format(job_list[job])
+                    output_message = "Список вакансий: \n {} \n Вы и так максимально успешны\n Доступные команды: Назад"\
+                        .format(job_list[job_index])
 
                 buttons, user_storage = get_suggests(user_storage)
                 return НуПридумаемНазваниеПотом(response, user_storage, output_message, buttons, database, request, handler)
