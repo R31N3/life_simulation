@@ -17,10 +17,11 @@ def init_database(host, user, password, dbname):
                       {'user_id': "serial primary", "request_id": "str NOT NULL UNIQUE", "handler": "str DEFAULT 'null'",
                        "Name": "str DEFAULT 'null'", "Named": "bool DEFAULT False", "Experience": "int DEFAULT 0",
                        "Money": "int DEFAULT 1000", "Food": "int DEFAULT 70", "Exp": "int DEFAULT 0",
-                       "Lvl": "str DEFAULT '0'", "Job": "str DEFAULT '0'",
-                       "Freelance": "str DEFAULT 'zp#&time#&exp'", "Day" : "int DEFAULT 0",
-                       "Credit" : "str DEFAULT 'index#&money#&time'", "Deposit" : "str DEFAULT 'index#&money#&time'",
-                       "Mood": "int DEFAULT 70", "Health": "int DEFAULT 70", "Money_Waste": "int DEFAULT 0",
+                       "Lvl": "str DEFAULT '0'", "Job": "str DEFAULT 'Безработный#$0'",
+                       "Freelance": "str DEFAULT 'Безделие#$бесценный опыт о потери времени#$бесконечность'",
+                       "Day": "int DEFAULT 0", "Credit": "str DEFAULT 'index#$money#$percent#$time'",
+                       "Deposit": "str DEFAULT 'index#$money#$ercent'", "Mood": "int DEFAULT 70",
+                       "Health": "int DEFAULT 70", "Money_Waste": "int DEFAULT 0",
                        "Food_Waste": "int DEFAULT 20", "Mood_Waste": "int DEFAULT 20" })
     return psdb
 
