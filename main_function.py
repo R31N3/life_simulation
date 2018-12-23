@@ -5,7 +5,8 @@ import json
 
 Named = False
 
-def find_difference(lst1, lst2):
+
+def find_difference(lst1, lst2):  # i = item
     return [i for i in lst1 if i not in lst2]
 
 
