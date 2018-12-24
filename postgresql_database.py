@@ -145,7 +145,7 @@ class DatabaseManager:
         :return: строку, где строковые элементы дополнительно обёрнуты
         в строку типа braces_type
         """
-        result = ""
+        result: str = ""
         if string != 'True' and string != 'False':
             result = braces_type + string + braces_type
         else:
