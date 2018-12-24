@@ -145,12 +145,11 @@ class DatabaseManager:
         :return: строку, где строковые элементы дополнительно обёрнуты
         в строку типа braces_type
         """
-        result: str = ""
         if string != 'True' and string != 'False':
-            result = braces_type + string + braces_type
+            return braces_type + string + braces_type
         else:
-            result = string[:]
-        return result
+            return string[:]
+
 
         # result_list = []
         # for item in string.split(', '):  # если есть хотя бы 1 буква, то строка не число, но может быть bool
