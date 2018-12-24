@@ -145,13 +145,20 @@ class DatabaseManager:
         :return: строку, где строковые элементы дополнительно обёрнуты
         в строку типа braces_type
         """
-        result_list = []
-        for item in string.split(', '):  # если есть хотя бы 1 буква, то строка не число, но может быть bool
-            if item != 'True' and item != 'False':
-                result_list.append(braces_type + item + braces_type)
-            else:  # в случае если не нужно обрамлять, оставляем как есть
-                result_list.append(item)
-        return (', '.join(result_list) if len(result_list) > 1 else result_list[0]).replace("\\", "")
+        result = ""
+        if string != 'True' and string != 'False':
+            result = braces_type + string + braces_type
+        else:
+            result = string[:]
+        return result
+
+        # result_list = []
+        # for item in string.split(', '):  # если есть хотя бы 1 буква, то строка не число, но может быть bool
+        #     if item != 'True' and item != 'False':
+        #         result_list.append(braces_type + item + braces_type)
+        #     else:  # в случае если не нужно обрамлять, оставляем как есть
+        #         result_list.append(item)
+        # return (', '.join(result_list) if len(result_list) > 1 else result_list[0]).replace("\\", "")
 
     @staticmethod
     def check_for_hidden_list_sequence(input_obj, sequence='#&%') -> bool:
