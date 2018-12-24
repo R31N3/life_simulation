@@ -17,13 +17,15 @@ def init_database(host, user, password, dbname):
                       {'user_id': "serial primary", "request_id": "str NOT NULL UNIQUE", "handler": "str DEFAULT 'null'",
                        "Name": "str DEFAULT 'null'", "Named": "bool DEFAULT False", "Experience": "int DEFAULT 0",
                        "Money": "int DEFAULT 1000", "Food": "int DEFAULT 70", "Exp": "int DEFAULT 0",
-                       "Lvl": "str DEFAULT '0'", "Job": "str DEFAULT 'Безработный#$0'",
+                       "Lvl": "str DEFAULT '1'", "Job": "str DEFAULT 'Безработный#$0#$0#$1'",
                        "Freelance": "str DEFAULT 'Безделие#$бесценный опыт о потери времени#$бесконечность'",
-                       "Day": "int DEFAULT 0", "Credit": "str DEFAULT '10#$percent#$time'",
+                       "Day": "int DEFAULT 0", "Credit": "str DEFAULT '0#$0#$0'",
                        "Deposit": "str DEFAULT '0#$1'", "Mood": "int DEFAULT 70",
-                       "Health": "int DEFAULT 70", "Money_Waste": "int DEFAULT 0",
-                       "Food_Waste": "int DEFAULT 20", "Mood_Waste": "int DEFAULT 20",
-                       "user_requirements": "str DEFAULT ''"})
+                       "Health": "int DEFAULT 70", "Waste": "str DEFAULT '20#$5#$0#$0'",
+                       "books": "str DEFAULT 'null'", "Day_changed": "bool DEFAULT False",
+                       "Is_Dead": "bool DEFAULT False", "current_education": "str DEFAULT 'null'",
+                       "education": "str DEFAULT 'null'", "current_course": "str DEFAULT 'null'",
+                       "course": "str DEFAULT 'null'"})
     return psdb
 
 
@@ -66,7 +68,7 @@ def main():
     print("DE: Введите ID пользователя")
     id = input()
     stResponce = DeResponse()
-    database = init_database(host='localhost', user='shagonru', password='13082000',
+    database = init_database(host='localhost', user='postgres', password='1488',
                              dbname='programmer_simulator')
     responce, userStorage = handle_dialog(DeRequest(True, id), stResponce, {}, database)
     printResponce(responce)
