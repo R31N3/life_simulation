@@ -26,6 +26,7 @@ def init_database(host, user, password, dbname):
                        "Is_Dead": "bool DEFAULT False", "current_education": "str DEFAULT 'null'",
                        "education": "str DEFAULT 'null'", "current_course": "str DEFAULT 'null'",
                        "course": "str DEFAULT 'null'"})
+    psdb.drop_table("users_info")
     return psdb
 
 
