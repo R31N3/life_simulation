@@ -330,15 +330,25 @@ def handle_dialog(request, response, user_storage, database):
                                             True)
 
         database.update_entries('users_info', request.user_id, {'Day_changed': False}, update_type='rewrite')
-    print(handler, input_message)
+
+    if "помощь" in input_message or input_message in "а что ты умеешь":
+        output_message = "В данной игре ты пройдешь путь карьерного роста от безработного до" \
+                         " главы собственной компании, в то же время на нем тебе придется следить и бороться с самыми" \
+                         " злейшими врагами программистов - с голодом и плохим настроением! Проживая день за днем " \
+                         "тебе придется питаться и развлекать себя, дабы не умереть от стресса. Перемещайся по разделам," \
+                         "выполняй желаемые действия и переходи на следующий день, всё просто! Удачи! Доступные разделы: {}".format(
+            "\n".join(user_storage["suggests"])
+        )
+        buttons, user_storage = get_suggests(user_storage)
+        return message_return(response, user_storage, output_message, buttons, database, request,
+                              handler, warning_message, congrats)
+
     if handler.endswith("other_next"):
         print(input_message in "помощь")
         if input_message == "источник дохода" or input_message == "доход":
             handler = "profit_page"
         elif input_message == "образование и курсы" or input_message == "образование" or input_message == "курсы":
             handler = "education_page"
-        elif "помощь" in input_message or input_message in "а что ты умеешь":
-            handler = "help_page"
         elif input_message == "основная информация" or input_message == "информация":
             handler = "start_page"
 
@@ -1463,22 +1473,7 @@ def handle_dialog(request, response, user_storage, database):
             buttons, user_storage = get_suggests(user_storage)
             return message_return(response, user_storage, output_message, buttons, database, request,
                                             handler, warning_message, congrats)
-    if handler == "help_page":
-        user_storage["suggests"] = [
-            "Основная информация",
-            "Источник дохода",
-            "Образование и курсы"]
-        output_message = "В данной игре ты пройдешь путь карьерного роста от безработного до" \
-                         " главы собственной компании, в то же время на нем тебе придется следить и бороться с самыми" \
-                         " злейшими врагами программистов - с голодом и плохим настроением! Проживая день за днем " \
-                         "тебе придется питаться и развлекать себя, дабы не умереть от стресса. Перемещайся по разделам," \
-                         "выполняй желаемые действия и переходи на следующий день, всё просто! Удачи! Доступные разделы: {}".format(
-            "\n".join(user_storage["suggests"])
-        )
-        handler = "other_next"
-        buttons, user_storage = get_suggests(user_storage)
-        return message_return(response, user_storage, output_message, buttons, database, request,
-                              handler, warning_message, congrats)
+
 
     update_handler(handler, database, request)
 
