@@ -40,16 +40,19 @@ def init_database(host, user, password, dbname):
     =================================================================
     """
     psdb = postgresql_database.DatabaseManager(host, user, password, dbname)
-    psdb.drop_table("users_info")
     psdb.create_table("users_info",
-                      {'user_id': "serial primary", "request_id": "str NOT NULL UNIQUE",
-                       "handler": "str DEFAULT 'handler is empty'", "Named": "bool DEFAULT False",
-                       "Experience": "int DEFAULT 0", "Money": "int DEFAULT 1000", "Food": "int DEFAULT 100",
-                       "Exp": "int DEFAULT 0", "Lvl": "str DEFAULT '0'", "Job": "str DEFAULT '0'",
-                       "Freelance": "str DEFAULT 'zp#&time#&exp'", "credit": "str DEFAULT 'index#&money#&time'",
-                       "deposit": "int DEFAULT 0", "Mood": "int DEFAULT 100", "Health": "int DEFAULT 100",
-                       "Money_Waste": "int DEFAULT 0", "Food_Waste": "int DEFAULT 20",
-                       "Mood_Waste": "int DEFAULT 20", })
+                      {'user_id': "serial primary", "request_id": "str NOT NULL UNIQUE", "handler": "str DEFAULT 'null'",
+                       "Name": "str DEFAULT 'null'", "Named": "bool DEFAULT False", "Experience": "int DEFAULT 0",
+                       "Money": "int DEFAULT 2000", "Food": "int DEFAULT 100", "Exp": "int DEFAULT 0",
+                       "Lvl": "str DEFAULT '0'", "Job": "str DEFAULT 'Безработный#$0#$0#$1'",
+                       "Freelance": "str DEFAULT 'Безделие#$бесценный опыт о потери времени#$бесконечность'",
+                       "Day": "int DEFAULT 0", "Credit": "str DEFAULT '0#$0#$0'",
+                       "Deposit": "str DEFAULT '0#$7'", "Mood": "int DEFAULT 100",
+                       "Health": "int DEFAULT 100", "Waste": "str DEFAULT '20#$5#$0#$0'",
+                       "books": "str DEFAULT 'null'", "Day_changed": "bool DEFAULT False",
+                       "Is_Dead": "bool DEFAULT False", "current_education": "str DEFAULT 'null'",
+                       "education": "str DEFAULT 'null'", "current_course": "str DEFAULT 'null'",
+                       "course": "str DEFAULT 'null'"})
     return psdb
 
 
@@ -62,7 +65,8 @@ def mainn():
 @app.route("/alice_hackaton/", methods=['POST'])
 def main():
     morph = pymorphy2.MorphAnalyzer()
-    database = init_database('localhost', 'shagonru', '13082000', 'programmer_simulator')
+    database = init_database(host='localhost', user='postgres2', password='1488',
+                             dbname='programmer_simulator')
 
     # Функция получает тело запроса и возвращает ответ.
     alice_request = AliceRequest(request.json)
