@@ -9,12 +9,10 @@ import logging
 from alice_sdk import AliceRequest, AliceResponse
 
 # Импортируем модуль с логикой игры
-from function_example import handle_dialog
+from main_function import *
 
 # Импортируем модуль работы с базами данных
 import postgresql_database
-
-# Импортируем модуль грамматического анализа
 
 # Импортируем подмодули Flask для запуска веб-сервиса.
 from flask import Flask, request
@@ -56,16 +54,15 @@ def init_database(host, user, password, dbname):
     return psdb
 
 
-@app.route("/alice_hackaton/ping")
+@app.route("/life_simulation/ping")
 def mainn():
     return "pong"
 
 
 # Задаем параметры приложения Flask.
-@app.route("/alice_hackaton/", methods=['POST'])
+@app.route("/life_simulation/", methods=['POST'])
 def main():
-    morph = pymorphy2.MorphAnalyzer()
-    database = init_database(host='localhost', user='postgres2', password='1488',
+    database = init_database(host='localhost', user='postgres', password='1488',
                              dbname='programmer_simulator')
 
     # Функция получает тело запроса и возвращает ответ.
@@ -79,10 +76,11 @@ def main():
     print(session_storage.get(user_id))
     print(len(session_storage))
     alice_response, session_storage[user_id] = handle_dialog(
-        alice_request, alice_response, session_storage.get(user_id), database, morph.parse('очко')[0]
+        alice_request, alice_response, session_storage.get(user_id), database
     )
 
     logging.info('Response: {}'.format(alice_response))
+    print()
 
     return alice_response.dumps()
 
