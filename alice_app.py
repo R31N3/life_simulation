@@ -62,7 +62,7 @@ def mainn():
 # Задаем параметры приложения Flask.
 @app.route("/life_simulation/", methods=['POST'])
 def main():
-    database = init_database(host='localhost', user='postgres', password='1488',
+    database = init_database(host='localhost', user='postgres3', password='1488',
                              dbname='programmer_simulator')
 
     # Функция получает тело запроса и возвращает ответ.

@@ -26,7 +26,6 @@ def init_database(host, user, password, dbname):
                        "Is_Dead": "bool DEFAULT False", "current_education": "str DEFAULT 'null'",
                        "education": "str DEFAULT 'null'", "current_course": "str DEFAULT 'null'",
                        "course": "str DEFAULT 'null'"})
-    psdb.drop_table("users_info")
     return psdb
 
 
@@ -69,7 +68,7 @@ def main():
     print("DE: Введите ID пользователя")
     id = input()
     stResponce = DeResponse()
-    database = init_database(host='localhost', user='postgres', password='1488',
+    database = init_database(host='localhost', user='postgres3', password='1488',
                              dbname='programmer_simulator')
     responce, userStorage = handle_dialog(DeRequest(True, id), stResponce, {}, database)
     printResponce(responce)
