@@ -69,7 +69,7 @@ def main():
     print("DE: Введите ID пользователя")
     id = input()
     stResponce = DeResponse()
-    database = init_database(host='localhost', user='postgres3', password='1488',
+    database = init_database(host='localhost', user='postgres', password='1488',
                              dbname='programmer_simulator')
     responce, userStorage = handle_dialog(DeRequest(True, id), stResponce, {}, database)
     printResponce(responce)

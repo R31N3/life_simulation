@@ -148,9 +148,9 @@ def handle_dialog(request, response, user_storage, database):
     handler = database.get_entry("users_info", ['handler'], {'request_id': request.user_id})[0][0]
     # Возвращает хендлер к основному разделу
     if input_message == "следующий день" or "следующий" in input_message:
-        print(handler)
         handler = "->".join(handler.split("->")[:-1])
-        print(handler)
+        day = database.get_entry("users_info", ['Day'], {'request_id': request.user_id})[0][0]
+        database.update_entries('users_info', request.user_id, {'Day': day + 1}, update_type='rewrite')
         database.update_entries('users_info', request.user_id, {'Day_changed': True}, update_type='rewrite')
 
     if database.get_entry("users_info", ['Day_changed'], {'request_id': request.user_id})[0][0]:
@@ -423,12 +423,14 @@ def handle_dialog(request, response, user_storage, database):
                 food = database.get_entry("users_info", ['Food'], {'request_id': request.user_id})[0][0]
                 index = database.get_entry("users_info", ['Lvl'], {'request_id': request.user_id})[0][0]
                 food_list = read_answers_data("data/start_page_list")["food"][index]
-                user_storage['suggests'] = [i + " цена {} восполнение {}".format(food_list[i][0], food_list[i][1]) for i in
-                                            food_list.keys()]+["Назад"]
+                lst = [i + " цена {} восполнение {}".format(food_list[i][0], food_list[i][1]) for i in
+                                            food_list.keys()]
+                user_storage['suggests'] = [i for i in
+                                            food_list.keys()]+["Назад", "Следующий день"]
                 handler += "->next"
 
                 output_message = "Ваш голод: {} \n Список продуктов: \n {}"\
-                    .format(food, ",\n".join(user_storage['suggests'][:-1])
+                    .format(food, ",\n".join(lst)
                             + "\n Доступные опции: Назад")
 
                 buttons, user_storage = get_suggests(user_storage)
@@ -479,14 +481,15 @@ def handle_dialog(request, response, user_storage, database):
                 health = database.get_entry("users_info", ['Health'], {'request_id': request.user_id})[0][0]
                 index = database.get_entry("users_info", ['Lvl'], {'request_id': request.user_id})[0][0]
                 health_list = read_answers_data("data/start_page_list")["health"][index]
-                user_storage['suggests'] = \
-                    [i + " цена {} восполнение {}".format(health_list[i][0], health_list[i][1]) for i in
-                     health_list.keys()] + ["Назад", "Следующий день"]
+                user_storage['suggests'] = [i for i in health_list.keys()] + ["Назад", "Следующий день"]
+
+                lst = [i + " цена {} восполнение {}".format(health_list[i][0], health_list[i][1]) for i in
+                     health_list.keys()]
 
                 handler += "->next"
 
                 output_message = "Ваше здоровье {} \n Список доступных методов восстановления здоровья: \n {}"\
-                    .format(health, ",\n".join(user_storage['suggests'][:-1])+ "\n Доступные команды: Назад, Следующий день")
+                    .format(health, ",\n".join(lst)+ "\n Доступные команды: Назад, Следующий день")
 
                 buttons, user_storage = get_suggests(user_storage)
                 return message_return(response, user_storage, output_message, buttons, database, request, handler, warning_message, congrats)
@@ -539,12 +542,13 @@ def handle_dialog(request, response, user_storage, database):
                 mood = database.get_entry("users_info", ['Mood'], {'request_id': request.user_id})[0][0]
                 index = database.get_entry("users_info", ['Lvl'], {'request_id': request.user_id})[0][0]
                 mood_list = read_answers_data("data/start_page_list")["mood"][index]
-                user_storage['suggests'] = [i+" цена {} восполнение {}".format(mood_list[i][0], mood_list[i][1]) for i in mood_list.keys()]+ ["Назад", "Следующий день"]
+                user_storage['suggests'] = [i for i in mood_list.keys()] + ["Назад", "Следующий день"]
 
+                lst = [i+" цена {} восполнение {}".format(mood_list[i][0], mood_list[i][1]) for i in mood_list.keys()]
                 handler += "->next"
 
                 output_message = "Ваше настроение {} \n Список доступных методов восстановления настроения: \n {}"\
-                    .format(mood, ",\n".join(user_storage['suggests'][:-1])+ "\n Доступные команды: Назад, Следующий день")
+                    .format(mood, ",\n".join(lst) + "\n Доступные команды: Назад, Следующий день")
 
                 buttons, user_storage = get_suggests(user_storage)
                 return message_return(response, user_storage, output_message, buttons, database, request, handler, warning_message, congrats)
@@ -1290,7 +1294,7 @@ def handle_dialog(request, response, user_storage, database):
                     if courses:
                         edc = ["{}. Длительность курса: {}. Цена курса: {}. Получаемый опыт: {}.".format(i[0], i[3], i[1], i[2]) for i in courses][:5]
                         user_storage["suggests"] = [i[0] for i in courses][:5] + ["Назад", "Следующий день"]
-                        output_message = "Пройденные курсы: {}. \n Доступные к прохождению: {}. Доступные команды: Назад, Следующий день" \
+                        output_message = "Пройденные курсы: {}. \n Список доступных курсов: {}. Доступные команды: Назад, Следующий день" \
                             .format("\n".join(education) if education else "Отсутствует", "\n".join(edc))
                     else:
                         user_storage["suggests"] = ["Назад", "Следующий день"]
@@ -1355,7 +1359,7 @@ def handle_dialog(request, response, user_storage, database):
                         else:
                             edc = ["{}. Длительность курса: {}. Цена курса: {}".format(i[0], i[1], i[2]) for i in courses][:5]
                             user_storage["suggests"] = [i[0] for i in courses][:5] + ["Назад", "Следующий день"]
-                            output_message = "Курс {} не был найден. Доступные к прохождению: {}. Доступные команды: Назад, Следующий день" \
+                            output_message = "Курс {} не был найден. Список доступных курсов: {}. Доступные команды: Назад, Следующий день" \
                                 .format(input_message, "\n".join(edc))
                     else:
                         user_storage["suggests"] = ["Назад", "Следующий день"]
