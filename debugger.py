@@ -1,5 +1,7 @@
 from main_function import *
 import postgresql_database
+
+
 def init_database(host, user, password, dbname):
     """
     =================================================================
@@ -69,7 +71,7 @@ def main():
     print("DE: Введите ID пользователя")
     id = input()
     stResponce = DeResponse()
-    database = init_database(host='localhost', user='postgres3', password='1488',
+    database = init_database(host='localhost', user='shagonru', password='13082000',
                              dbname='programmer_simulator')
     responce, userStorage = handle_dialog(DeRequest(True, id), stResponce, {}, database)
     printResponce(responce)

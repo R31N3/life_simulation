@@ -2,7 +2,7 @@
 
 import threading
 import psycopg2
-
+import time
 
 class DatabaseManager:
     def __init__(self, host: str, user: str, password: str, dbname: str,
