@@ -2,7 +2,6 @@
 
 import threading
 import psycopg2
-import time
 
 
 class DatabaseManager:
