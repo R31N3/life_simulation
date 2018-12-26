@@ -318,16 +318,15 @@ def handle_dialog(request, response, user_storage, database):
                         " увеличен! Однако в то же время увеличились и цены на продукты, развлечения и медицину."
             database.update_entries('users_info', request.user_id,
                                     {'Lvl': '3'}, update_type='rewrite')
-
-        if user_storage['suggests'] == ["Основная информация", "Источник дохода", "Образование и курсы", "Помощь",
-                                        "Назад", "Следующий день"]:
-            output_message = "Выберите один из доступных разделов. Доступные разделы: " \
-                             + ", ".join(user_storage['suggests'])
-            handler = "other_next"
-            buttons, user_storage = get_suggests(user_storage)
-            database.update_entries('users_info', request.user_id, {'Day_changed': False}, update_type='rewrite')
-            return message_return(response, user_storage, output_message, buttons, database, request, handler, warning_message,
-                                            True)
+        if len(user_storage["suggests"]) > 3:
+            if user_storage['suggests'][:4] == ["Основная информация", "Источник дохода", "Образование и курсы", "Помощь"]:
+                output_message = "Выберите один из доступных разделов. Доступные разделы: " \
+                                 + ", ".join(user_storage['suggests'])
+                handler = "other_next"
+                buttons, user_storage = get_suggests(user_storage)
+                database.update_entries('users_info', request.user_id, {'Day_changed': False}, update_type='rewrite')
+                return message_return(response, user_storage, output_message, buttons, database, request, handler, warning_message,
+                                                True)
 
         database.update_entries('users_info', request.user_id, {'Day_changed': False}, update_type='rewrite')
 
@@ -1229,7 +1228,7 @@ def handle_dialog(request, response, user_storage, database):
                                                                 handler, warning_message, congrats)
                         for i in available:
                             print(request.command, available_education[i][0])
-                            if request.command in available_education[i][0].lower():
+                            if request.command.lower() in available_education[i][0].lower():
                                 money = database.get_entry("users_info", ['Money'],
                                                        {'request_id': request.user_id})[0][0]
                                 if money >= int(available_education[i][2]):
@@ -1250,6 +1249,7 @@ def handle_dialog(request, response, user_storage, database):
                                     )
                                 break
                         else:
+                            print(input_message)
                             output_message = "{} не было найдено в списке доступных образований к получению".format(input_message)
 
                         user_storage["suggests"] = ["Назад"]
