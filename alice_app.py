@@ -60,7 +60,7 @@ def mainn():
 
 
 # Задаем параметры приложения Flask.
-@app.route("/life_simulation/", methods=['POST'])
+@app.route("/alice_hackaton/", methods=['POST'])
 def main():
     database = init_database(host='localhost', user='postgres3', password='1488',
                              dbname='programmer_simulator')
